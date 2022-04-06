@@ -19,19 +19,19 @@ class BaseInferenceModel(ABC):
     @property
     @abstractmethod
     def _converted_model_path(self) -> str:
-        """path to converted model"""
+        """path to converted models"""
 
     @abstractmethod
     def _convert_model(self):
-        """converts Model into inference model"""
+        """converts Model into inference models"""
 
     @abstractmethod
     def _prepare_interpreter(self):
-        """prepare inference model interpreter"""
+        """prepare inference models interpreter"""
 
     @abstractmethod
     def _predict(self, preprocessed_sample) -> tf.Tensor:
-        """predict with model interpreter. returns tensor with prediction result for one sample,
+        """predict with models interpreter. returns tensor with prediction result for one sample,
         not batch. """
 
     def inference(self, sample: tf.Tensor, sample_rate: int):
@@ -47,7 +47,7 @@ class TFLiteInferenceModel(BaseInferenceModel):
 
     @property
     def _converted_model_path(self) -> str:
-        return './model/bicycle_bell_model.tflite'
+        return './models/bicycle_bell_model.tflite'
 
     def _convert_model(self):
         converter = tf.lite.TFLiteConverter.from_saved_model(self.saved_model.saved_model_path)
@@ -59,18 +59,22 @@ class TFLiteInferenceModel(BaseInferenceModel):
             file.write(tflite_model)
 
     def _prepare_interpreter(self):
-        # Load the TFLite model and allocate tensors.
+        # Load the TFLite models and allocate tensors.
         self.interpreter = tf.lite.Interpreter(self._converted_model_path)
         self.interpreter.allocate_tensors()
         # Get input and output tensors.
         self.tensor_input_details = self.interpreter.get_input_details()
+        print('CLEMENS', str(self.tensor_input_details))
         self.logger.debug(f"Input Details: {str(self.tensor_input_details)}")
         self.tensor_output_details = self.interpreter.get_output_details()
         input_shape = self.tensor_input_details[0]['shape']
         self.logger.debug(f"Input Shape: {str(input_shape)}")
 
-    def _predict(self, preprocessed_sample) -> tf.Tensor:
-        self.interpreter.set_tensor(self.tensor_input_details[0]['index'], preprocessed_sample)
+    def _predict(self, preprocessed_sample: tf.Tensor) -> tf.Tensor:
+        batched_preprocessed_sample = tf.expand_dims(preprocessed_sample, axis=0)
+        print(batched_preprocessed_sample)
+        self.interpreter.set_tensor(self.tensor_input_details[0]['index'],
+                                    batched_preprocessed_sample)
         self.logger.debug("invoke prediction")
         self.interpreter.invoke()
         # = [[y_pred_prob]] shape=(batch_size, pred)

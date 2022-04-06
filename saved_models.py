@@ -14,7 +14,7 @@ class BaseSavedModel(ABC):
     def __init__(self, saved_model_path: str, threshold: float) -> None:
         self.logger = logging.getLogger(__name__)
         self.logger.info(
-            f'Loading model {self._name} from: {saved_model_path} with threshold: {threshold}'
+            f'Loading models {self._name} from: {saved_model_path} with threshold: {threshold}'
         )
         self.saved_model_path = saved_model_path
         self.threshold = threshold
@@ -22,7 +22,7 @@ class BaseSavedModel(ABC):
     @property
     @abstractmethod
     def _name(self) -> str:
-        """name of the model"""
+        """name of the models"""
 
     @abstractmethod
     def preprocess(self, sample: tf.Tensor, data_sample_rate: int) -> tf.Tensor:
