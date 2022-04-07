@@ -15,25 +15,12 @@ from tqdm import tqdm
 import tensorflow as tf
 import tensorflow_io as tfio
 import pyaudio
+from configurations import ReceiverConfig
 
 
 def _concat_samples(samples_chunk: list[tf.Tensor]) -> tf.Tensor:
     """Concatenate samples of the chunk"""
     return tf.concat(samples_chunk, 0)
-
-
-@dataclass(frozen=True)
-class ReceiverConfig:
-    """Configuration for an audio receiver."""
-    sample_rate: int
-    channels: int
-    use_input: bool
-    input_device: int
-    use_output: bool
-    output_device: int
-    element_size: int
-    chunk_size: int
-    storage_size: int
 
 
 @dataclass
@@ -74,11 +61,6 @@ class ProductionAudioReceiverChunk:
             [element.received_samples for element in self.elements_chunk]
         )
 
-    # def __post_init__(self):
-    #     self.received_samples_chunk = _concat_samples(
-    #         [element.received_samples for element in self.elements_chunk]
-    #     )
-
 
 class EvaluationAudioReceiverChunk:
     """EvaluationAudioReceiverChunk"""
@@ -94,19 +76,6 @@ class EvaluationAudioReceiverChunk:
         self.labels_chunk = _concat_samples(
             [element.labels for element in self.elements_chunk]
         )
-
-    # elements_chunk: list[EvaluationAudioReceiverElement]
-    #
-    # def __post_init__(self):
-    #     self.received_samples_chunk = _concat_samples(
-    #         [element.received_samples for element in self.elements_chunk]
-    #     )
-    #     self.played_samples_chunk = _concat_samples(
-    #         [element.played_samples for element in self.elements_chunk]
-    #     )
-    #     self.labels_chunk = _concat_samples(
-    #         [element.labels for element in self.elements_chunk]
-    #     )
 
 
 @dataclass
@@ -187,7 +156,7 @@ class AudioReceiver(Thread, ABC):
         self.storage_size = config.storage_size
 
         self.frames_per_buffer = config.element_size
-        self.window_size = config.chunk_size * config.element_size / config.sample_rate  # as time
+        self.window_size = config.chunk_size * config.element_size
 
         self.logger = logging.getLogger(__name__)
         self.storage = AudioReceiverStorage(self.storage_size)

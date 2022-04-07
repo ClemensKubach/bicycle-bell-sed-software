@@ -2,8 +2,18 @@
 
 import pickle
 import time
+from typing import Union
 
 from receiving import AudioReceiverStorage
+
+
+def samples_to_seconds(samples: Union[int, list], sample_rate: int):
+    """return time in seconds of sample size or samples list"""
+    if isinstance(samples, list):
+        length = len(samples)
+    else:
+        length = samples
+    return length / sample_rate
 
 
 def round_up_div(num_a, num_b):

@@ -5,37 +5,13 @@ import os
 import threading
 import time
 from abc import ABC
-from dataclasses import dataclass
-from enum import Enum, auto
 from typing import Optional, Union
 import keyboard
-import utils
 
+import utils
+from configurations import SedSystemConfig, SystemModes, LogLevels
 from predicting import ProductionPredictor, EvaluationPredictor, PredictorConfig
 from receiving import ProductionAudioReceiver, EvaluationAudioReceiver, ReceiverConfig
-
-
-class SystemModes(Enum):
-    """Available modes for the sound-event-detection system."""
-    PRODUCTION = auto()
-    EVALUATION = auto()
-
-
-class LogLevels(Enum):
-    """Available logging levels."""
-    INFO = 'info'
-    DEBUG = 'debug'
-
-
-@dataclass(frozen=True)
-class SedSystemConfig:
-    """Configuration for a sound-event-detection system."""
-    system_mode: SystemModes
-    loglevel: LogLevels
-    gpu: bool
-    save_records: bool
-    sample_rate: int
-    chunk_size: int
 
 
 class SedSystem:

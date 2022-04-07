@@ -7,9 +7,13 @@ from typing import Union
 
 import fire
 
-from predicting import ProductionPredictorResult, EvaluationPredictorResult, PredictorConfig
-from receiving import ReceiverConfig
-from sed_system import SedSystem, LogLevels, SystemModes, SedSystemConfig
+import utils
+from configurations import ModelSelection, SystemModes, LogLevels, SedSystemConfig, ReceiverConfig, \
+    PredictorConfig
+from inference_models import InferenceModels
+from predicting import ProductionPredictorResult, EvaluationPredictorResult
+from saved_models import SavedModels
+from sed_system import SedSystem
 
 
 def main(tfmodel_path,
@@ -34,16 +38,16 @@ def main(tfmodel_path,
          prob_logging=False):
     """Highly configurable execution script."""
 
-    element_size = int(sample_rate * 0.1)
-
     def custom_callback(
             predictor_result: Union[ProductionPredictorResult, EvaluationPredictorResult]):
         logger = logging.getLogger(__name__)
+        window_time = utils.samples_to_seconds(sed.system.receiver.window_size, sample_rate)
 
         if mode == SystemModes.PRODUCTION:
             res = predictor_result
+
             prob_print = f' [{res.result.probability:.2f}]' if prob_logging else ''
-            logger.info(f'Prediction for the past {sed.system.receiver.window_size}sec: '
+            logger.info(f'Prediction for the past {window_time}sec: '
                         f'{res.result.label}{prob_print} | delay: {res.result.delay.max_delay}sec '
                         f'with an inference time of {res.result.delay.inference}sec')
         else:
@@ -57,7 +61,7 @@ def main(tfmodel_path,
                 received_print = f'{res.result.label}'
                 played_print = f'{res.result_played.label}'
                 gt_print = f'{res.result_ground_truth.label}'
-            logger.info(f"Prediction of the past {sed.system.receiver.window_size}sec: "
+            logger.info(f"Prediction of the past {window_time}sec: "
                         f"{received_print} received, {played_print} played, {gt_print} "
                         f"ground-truth | delay: {res.result.delay.max_delay}sec with an "
                         f"inference time of {res.result.delay.inference}sec")
@@ -84,7 +88,9 @@ def main(tfmodel_path,
     elif mode == SystemModes.EVALUATION:
         sed.system.init_receiver(receiver_config, wav_file, annotation_file, silent)
 
+    selected_model = ModelSelection(InferenceModels.TFLITE, SavedModels.CRNN)
     predictor_config = PredictorConfig(tfmodel_path,
+                                       selected_model,
                                        sample_rate,
                                        chunk_size,
                                        threshold=0.5,

@@ -23,11 +23,10 @@ It is a part of the results of my bachelor thesis [], as well as the git reposit
 
 ## Configurations
 
-### Download Tensorflow Model from GOogle CLoud Storage
+### Download Tensorflow Model from Google Cloud Storage
 In the following example, the model `model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05` will be downloaded from Google Cloud Storage.
 1. `gcloud auth login`
-2. `gsutil -m cp "gs://clemens-thesis-dataset-bucket/FSD50K/model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05.json" ./model/`
-3. `gsutil -m cp "gs://clemens-thesis-dataset-bucket/FSD50K/model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05.json" ./model/`
+2. `gsutil -m cp -r "gs://thesis-bicycle-bell-sed-bucket-eu/models/*" ./model/`
 
 ### Download System Test Files from Google Cloud Storage
 1. `gcloud auth login`

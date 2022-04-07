@@ -2,6 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 
 import tensorflow as tf
 import tensorflow_io as tfio
@@ -75,3 +76,10 @@ class YamNetExtendedSavedModel(Mono16kWaveInputSavedModel):
     @property
     def _name(self) -> str:
         return 'yamnet-extended'
+
+
+class SavedModels(Enum):
+    """Selector for saved model"""
+    CRNN = CrnnSavedModel
+    YAMNET_BASE = YamNetBaseSavedModel
+    YAMNET_EXTENDED = YamNetExtendedSavedModel

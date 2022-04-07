@@ -6,13 +6,12 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from threading import Thread
-from typing import Optional, Any
+from typing import Any
 
 import tensorflow as tf
 
 import receiving
-from inference_models import TFLiteInferenceModel
-from saved_models import CrnnSavedModel
+from configurations import PredictorConfig
 
 
 @dataclass(frozen=True)
@@ -25,16 +24,6 @@ class Delay:
     def max_delay(self):
         """Sum of all delay parts."""
         return self.inference + self.receiving
-
-
-@dataclass(frozen=True)
-class PredictorConfig:
-    """Configuration for an audio receiver."""
-    tfmodel_path: str
-    sample_rate: int
-    chunk_size: int
-    threshold: float = 0.5
-    callback: Optional[Any] = None
 
 
 @dataclass
@@ -71,6 +60,7 @@ class Predictor(Thread, ABC):
 
         self.receiver = initialized_receiver
         self.tfmodel_path = config.tfmodel_path
+        self.model_selection = config.model_selection
         self.sample_rate = config.sample_rate
         self.chunk_size = config.chunk_size
         self.threshold = config.threshold
@@ -81,7 +71,10 @@ class Predictor(Thread, ABC):
             self.logger.error(msg)
             raise UnboundLocalError(msg)
 
-        self.model = TFLiteInferenceModel(CrnnSavedModel(self.tfmodel_path, self.threshold))
+        self.model = self.model_selection.inference_model(
+            self.model_selection.saved_model(self.tfmodel_path, self.threshold),
+            self.receiver.window_size
+        )
         self._stop_event = threading.Event()
         self.logger.debug("Predictor initialized")
 
