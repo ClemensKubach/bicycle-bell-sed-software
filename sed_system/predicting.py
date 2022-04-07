@@ -10,7 +10,7 @@ from typing import Any
 
 import tensorflow as tf
 
-import receiving
+from lib import receiving
 from configurations import PredictorConfig
 
 
@@ -56,31 +56,28 @@ class Predictor(Thread, ABC):
 
     def __init__(self, config: PredictorConfig, initialized_receiver: receiving.AudioReceiver):
         super().__init__(daemon=True)
+        self.config = config
         self.logger = logging.getLogger(__name__)
 
         self.receiver = initialized_receiver
-        self.tfmodel_path = config.tfmodel_path
-        self.model_selection = config.model_selection
-        self.sample_rate = config.sample_rate
-        self.chunk_size = config.chunk_size
-        self.threshold = config.threshold
-        self.callback = config.callback
 
         if self.receiver is None:
             msg = 'Receiver must be initialized before initializing Predictor!'
             self.logger.error(msg)
             raise UnboundLocalError(msg)
 
-        self.model = self.model_selection.inference_model(
-            self.model_selection.saved_model(self.tfmodel_path, self.threshold),
-            self.receiver.window_size
+        model_selection = self.config.model_selection
+        self.model = model_selection.inference_model(
+            model_selection.saved_model(self.config.tfmodel_path, self.config.threshold),
+            self.receiver.config.audio_config.window_size
         )
         self._stop_event = threading.Event()
         self.logger.debug("Predictor initialized")
 
     def _predict_for_samples(self, samples: tf.Tensor) -> PredictorResult:
         time_start = time.perf_counter()
-        y_pred_prob, y_pred_label = self.model.inference(samples, self.sample_rate)
+        audio = self.config.audio_config
+        y_pred_prob, y_pred_label = self.model.inference(samples, audio.sample_rate)
         time_end = time.perf_counter()
         return PredictorResult(y_pred_prob,
                                y_pred_label,
@@ -92,10 +89,10 @@ class Predictor(Thread, ABC):
 
     def _run_callback(self, predictor_result: Any):
         """runs callback"""
-        if self.callback is None:
+        if self.config.callback is None:
             pass
         else:
-            self.callback(predictor_result)
+            self.config.callback(predictor_result)
 
     def run(self):
         """run the predictor in another thread"""

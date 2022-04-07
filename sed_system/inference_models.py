@@ -46,7 +46,9 @@ class BaseInferenceModel(ABC):
 
 
 class TFLiteInferenceModel(BaseInferenceModel):
-    """TFLite Inference Model"""
+    """
+    TFLite Inference Model
+    """
 
     @property
     def _converted_model_path(self) -> str:

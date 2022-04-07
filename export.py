@@ -3,7 +3,8 @@
 import fire
 import numpy as np
 import soundfile
-import utils
+from lib import utils
+
 
 def main(path_rb: str, path_wav: str, sr: int = 22050, subtype: str = 'FLOAT'):
     """ export receiver buffer elements of a saved object file to an concatenated wave file"""

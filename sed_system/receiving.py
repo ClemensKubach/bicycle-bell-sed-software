@@ -145,35 +145,26 @@ class AudioReceiver(Thread, ABC):
 
     def __init__(self, config: ReceiverConfig) -> None:
         super().__init__(daemon=True)
-        self.sample_rate = config.sample_rate
-        self.channels = config.channels
-        self.use_input = config.use_input
-        self.input_device = config.input_device
-        self.use_output = config.use_output
-        self.output_device = config.output_device
-        self.element_size = config.element_size
-        self.chunk_size = config.chunk_size
-        self.storage_size = config.storage_size
+        self.config = config
 
-        self.frames_per_buffer = config.element_size
-        self.window_size = config.chunk_size * config.element_size
+        audio = self.config.audio_config
 
         self.logger = logging.getLogger(__name__)
-        self.storage = AudioReceiverStorage(self.storage_size)
+        self.storage = AudioReceiverStorage(self.config.storage_size)
         self.buffer = self._init_buffer()
 
         try:
             self.pyaudio_instance = pyaudio.PyAudio()
             self.stream = self.pyaudio_instance.open(
-                rate=self.sample_rate,
+                rate=audio.sample_rate,
                 format=pyaudio.paFloat32,
-                channels=self.channels,
-                input=self.use_input,
-                input_device_index=self.input_device,
-                output=self.use_output,
-                output_device_index=self.output_device,
+                channels=self.config.channels,
+                input=self.config.use_input,
+                input_device_index=self.config.input_device,
+                output=self.config.use_output,
+                output_device_index=self.config.output_device,
                 stream_callback=self._stream_callback,
-                frames_per_buffer=self.frames_per_buffer,
+                frames_per_buffer=audio.frame_size,
                 start=False,
             )
             self._stop_event = threading.Event()
@@ -218,7 +209,7 @@ class AudioReceiver(Thread, ABC):
     def _stream_callback(self, in_data, frame_count, time_info, status):
         self.logger.debug(f"Audio data with {frame_count} samples "
                           f"for {time_info} and status {status} received")
-        audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.channels]
+        audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
         # self._stream_callback_creator(audio_as_np_float32)
         element = AudioReceiverElement(tf.constant(audio_as_np_float32))
         self.buffer.add_element(element)
@@ -231,7 +222,7 @@ class AudioReceiver(Thread, ABC):
     @property
     def delay(self) -> float:
         """delay in seconds"""
-        return self.frames_per_buffer / self.sample_rate
+        return self.config.audio_config.frame_size / self.config.sample_rate
 
     def close(self) -> None:
         """closes the receiver"""
@@ -255,18 +246,21 @@ class ProductionAudioReceiver(AudioReceiver):
     """Production audio receiver"""
 
     def _init_buffer(self) -> AudioReceiverBuffer:
-        return AudioReceiverBuffer(ProductionAudioReceiverChunk, self.chunk_size)
+        audio = self.config.audio_config
+        return AudioReceiverBuffer(ProductionAudioReceiverChunk, audio.chunk_size)
 
 
 class EvaluationAudioReceiver(AudioReceiver):
     """Evaluation audio receiver"""
 
     def _init_buffer(self) -> AudioReceiverBuffer:
-        return AudioReceiverBuffer(EvaluationAudioReceiverChunk, self.chunk_size)
+        audio = self.config.audio_config
+        return AudioReceiverBuffer(EvaluationAudioReceiverChunk, audio.chunk_size)
 
     def __init__(self, config: ReceiverConfig,
                  wav_file: str, annotation_file: str, silent: bool) -> None:
         super().__init__(config)
+        audio = self.config.audio_config
         try:
             self.wav_file = wav_file
             self.annotation_file = annotation_file
@@ -288,8 +282,8 @@ class EvaluationAudioReceiver(AudioReceiver):
                         break
             sample_timings = []
             for seconds_timing_pair in self.annotations:
-                start = int(seconds_timing_pair[0] * self.sample_rate)  # start time
-                end = int(seconds_timing_pair[1] * self.sample_rate)  # end time
+                start = int(seconds_timing_pair[0] * audio.sample_rate)  # start time
+                end = int(seconds_timing_pair[1] * audio.sample_rate)  # end time
                 sample_timings.append((start, end))
             self.sample_timings = np.zeros(shape=self.wav.shape)
             for start, end in tqdm(sample_timings):
@@ -308,13 +302,13 @@ class EvaluationAudioReceiver(AudioReceiver):
         self.logger.debug(
             f"Audio data with {frame_count} samples for {time_info} and status {status} received")
         start_sample = self.current_start_sample
-        end_sample = start_sample + self.frames_per_buffer
+        end_sample = start_sample + self.config.audio_config.frame_size
         try:
             played_samples = self.wav[start_sample:end_sample]
             if self.silent:
                 received_samples = played_samples
             else:
-                received_samples = np.fromstring(in_data, dtype=np.float32)[0::self.channels]
+                received_samples = np.fromstring(in_data, dtype=np.float32)[0::self.config.channels]
             labels = self.sample_timings[start_sample:end_sample]
             self.logger.debug(
                 f"received Samples Shape {received_samples.shape} {labels.shape}")
@@ -324,7 +318,7 @@ class EvaluationAudioReceiver(AudioReceiver):
                 tf.constant(labels)
             )
             self.buffer.add_element(element)
-            self.current_start_sample += self.frames_per_buffer
+            self.current_start_sample += self.config.audio_config.frame_size
             return played_samples, pyaudio.paContinue
         except IndexError:
             self.logger.debug("End of evaluation wave file reached")

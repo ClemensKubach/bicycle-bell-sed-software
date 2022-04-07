@@ -9,9 +9,9 @@ from typing import Optional, Union
 import keyboard
 
 import utils
-from configurations import SedSystemConfig, SystemModes, LogLevels
-from predicting import ProductionPredictor, EvaluationPredictor, PredictorConfig
-from receiving import ProductionAudioReceiver, EvaluationAudioReceiver, ReceiverConfig
+from lib.configurations import SedSystemConfig, SystemModes, LogLevels
+from lib.predicting import ProductionPredictor, EvaluationPredictor, PredictorConfig
+from lib.receiving import ProductionAudioReceiver, EvaluationAudioReceiver, ReceiverConfig
 
 
 class SedSystem:
@@ -19,9 +19,10 @@ class SedSystem:
 
     def __init__(self, system_config: SedSystemConfig):
         self.config = system_config
+        audio = self.config.audio_config
 
         self._setup_logger(self.config.loglevel)
-        self._setup_system(self.config.system_mode, self.config.sample_rate, self.config.chunk_size)
+        self._setup_system(self.config.system_mode, audio.sample_rate, audio.chunk_size)
         self._show_gpu_setting(self.config.gpu)
         self._stop_event = threading.Event()
 
