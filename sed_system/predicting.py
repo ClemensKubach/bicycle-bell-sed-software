@@ -10,8 +10,8 @@ from typing import Any
 
 import tensorflow as tf
 
-from lib import receiving
-from configurations import PredictorConfig
+from sed_system import receiving
+from sed_system.configurations import PredictorConfig
 
 
 @dataclass(frozen=True)

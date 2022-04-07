@@ -15,7 +15,7 @@ from tqdm import tqdm
 import tensorflow as tf
 import tensorflow_io as tfio
 import pyaudio
-from configurations import ReceiverConfig
+from sed_system.configurations import ReceiverConfig
 
 
 def _concat_samples(samples_chunk: list[tf.Tensor]) -> tf.Tensor:

@@ -4,7 +4,7 @@ import pickle
 import time
 from typing import Union
 
-from lib.receiving import AudioReceiverStorage
+from sed_system.receiving import AudioReceiverStorage
 
 
 def samples_to_seconds(samples: Union[int, list], sample_rate: int):

@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional, Any, Type
 
-import utils
-from lib.inference_models import InferenceModels, BaseInferenceModel
-from saved_models import SavedModels, BaseSavedModel
+from sed_system import utils
+from sed_system.inference_models import InferenceModels, BaseInferenceModel
+from sed_system.saved_models import SavedModels, BaseSavedModel
 
 
 @dataclass

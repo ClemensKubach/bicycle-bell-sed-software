@@ -8,10 +8,10 @@ from abc import ABC
 from typing import Optional, Union
 import keyboard
 
-import utils
-from lib.configurations import SedSystemConfig, SystemModes, LogLevels
-from lib.predicting import ProductionPredictor, EvaluationPredictor, PredictorConfig
-from lib.receiving import ProductionAudioReceiver, EvaluationAudioReceiver, ReceiverConfig
+from sed_system import utils
+from sed_system.configurations import SedSystemConfig, SystemModes, LogLevels
+from sed_system.predicting import ProductionPredictor, EvaluationPredictor, PredictorConfig
+from sed_system.receiving import ProductionAudioReceiver, EvaluationAudioReceiver, ReceiverConfig
 
 
 class SedSystem:

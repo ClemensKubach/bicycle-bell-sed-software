@@ -5,7 +5,7 @@ from enum import Enum
 
 import tensorflow as tf
 
-from saved_models import BaseSavedModel
+from sed_system.saved_models import BaseSavedModel
 
 
 class BaseInferenceModel(ABC):
