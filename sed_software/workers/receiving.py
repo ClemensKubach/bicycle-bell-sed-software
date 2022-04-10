@@ -1,143 +1,25 @@
 """Module for receiving audio data."""
 
 import csv
-import queue
 import threading
 from abc import ABC, abstractmethod
 from threading import Thread
 import logging
 import re
-from typing import Optional, Protocol, Union, Type
-from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 import tensorflow_io as tfio
 import pyaudio
-from sed_system.configurations import ReceiverConfig
 
-
-def _concat_samples(samples_chunk: list[tf.Tensor]) -> tf.Tensor:
-    """Concatenate samples of the chunk"""
-    return tf.concat(samples_chunk, 0)
-
-
-@dataclass
-class AudioReceiverElement(ABC):
-    """AudioReceiverElement"""
-
-    received_samples: tf.Tensor
-
-
-@dataclass
-class ProductionAudioReceiverElement(AudioReceiverElement):
-    """ProductionAudioReceiverElement"""
-
-
-@dataclass
-class EvaluationAudioReceiverElement(AudioReceiverElement):
-    """EvaluationAudioReceiverElement"""
-
-    played_samples: tf.Tensor
-    labels: tf.Tensor
-
-    def __post_init__(self):
-        if not (self.received_samples.shape == self.played_samples.shape and
-                self.received_samples.shape == self.labels.shape):
-            raise ValueError("Shapes of received_samples, played_samples and labels are not equal")
-
-
-class AudioReceiverChunk(Protocol):
-    """AudioReceiverChunk"""
-
-
-class ProductionAudioReceiverChunk:
-    """ProductionAudioReceiverChunk"""
-
-    def __init__(self, elements_chunk: list[ProductionAudioReceiverElement]):
-        self.elements_chunk = elements_chunk
-        self.received_samples_chunk = _concat_samples(
-            [element.received_samples for element in self.elements_chunk]
-        )
-
-
-class EvaluationAudioReceiverChunk:
-    """EvaluationAudioReceiverChunk"""
-
-    def __init__(self, elements_chunk: list[EvaluationAudioReceiverElement]):
-        self.elements_chunk = elements_chunk
-        self.received_samples_chunk = _concat_samples(
-            [element.received_samples for element in self.elements_chunk]
-        )
-        self.played_samples_chunk = _concat_samples(
-            [element.played_samples for element in self.elements_chunk]
-        )
-        self.labels_chunk = _concat_samples(
-            [element.labels for element in self.elements_chunk]
-        )
-
-
-@dataclass
-class AudioReceiverStorage:
-    """AudioReceiverStorage
-
-    Can result in a memory overflow. Use with caution.
-    Set storage_size to 0 for no storage at all, and -1 for infinite storage."""
-
-    storage_size: int
-
-    def __post_init__(self):
-        self.logger = logging.getLogger(__name__)
-        self._storage = []
-        self.keep_all = bool(self.storage_size < 0)
-
-    def add_element(self, element: AudioReceiverElement):
-        """Add element to the storage"""
-        self._storage.append(element)
-        if len(self._storage) > self.storage_size:
-            self._storage.pop(0)
-
-    def get_elements(self) -> list[AudioReceiverElement]:
-        """Get elements from the storage"""
-        return self._storage
-
-
-@dataclass
-class AudioReceiverBuffer:
-    """AudioReceiverBuffer
-
-    chunk_size: number of elements per chunk
-    """
-
-    cls: Type[Union[ProductionAudioReceiverChunk, EvaluationAudioReceiverChunk]]
-    chunk_size: int
-
-    def __post_init__(self):
-        self.logger = logging.getLogger(__name__)
-        self._buffer = queue.Queue[AudioReceiverElement]()
-
-    @property
-    def current_buffer_size(self) -> int:
-        """Current buffer size"""
-        return self._buffer.qsize()
-
-    def add_element(self, element: AudioReceiverElement):
-        """Add element to the buffer"""
-        self._buffer.put(element)
-
-    def get_latest_chunk(self) -> Optional[Union[ProductionAudioReceiverChunk,
-                                                 EvaluationAudioReceiverChunk]]:
-        """Get the latest chunk from the buffer with concatenated samples."""
-        if self.current_buffer_size < self.chunk_size:
-            self.logger.warning(
-                f"Not enough frames in buffer for chunk creation. "
-                f"{self.chunk_size} needed, but only {self.current_buffer_size} given.")
-            return None
-        latest_slice = []
-        for _ in range(self.chunk_size):
-            latest_slice.insert(0, self._buffer.get())
-        return self.cls(latest_slice)
+from sed_software.data.audio.chunks import AudioChunk, ProductionAudioChunk, \
+    EvaluationAudioChunk
+from sed_software.data.audio.elements import AudioElement, EvaluationAudioElement
+from sed_software.data.configs.configs import ReceiverConfig
+from sed_software.storage.audio.persistent import AudioStorage
+from sed_software.storage.audio.temporary import AudioBuffer
 
 
 class AudioReceiver(Thread, ABC):
@@ -150,7 +32,7 @@ class AudioReceiver(Thread, ABC):
         audio = self.config.audio_config
 
         self.logger = logging.getLogger(__name__)
-        self.storage = AudioReceiverStorage(self.config.storage_size)
+        self.storage = AudioStorage(self.config.storage_size)
         self.buffer = self._init_buffer()
 
         try:
@@ -196,7 +78,7 @@ class AudioReceiver(Thread, ABC):
             raise
 
     @abstractmethod
-    def _init_buffer(self) -> AudioReceiverBuffer:
+    def _init_buffer(self) -> AudioBuffer:
         """create buffer instance"""
 
     def run(self) -> None:
@@ -211,18 +93,18 @@ class AudioReceiver(Thread, ABC):
                           f"for {time_info} and status {status} received")
         audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
         # self._stream_callback_creator(audio_as_np_float32)
-        element = AudioReceiverElement(tf.constant(audio_as_np_float32))
+        element = AudioElement(tf.constant(audio_as_np_float32))
         self.buffer.add_element(element)
         return in_data, pyaudio.paContinue
 
-    def receive_latest_chunk(self) -> Optional[AudioReceiverChunk]:
+    def receive_latest_chunk(self) -> Optional[AudioChunk]:
         """return latest chunk from buffer"""
         return self.buffer.get_latest_chunk()
 
     @property
     def delay(self) -> float:
         """delay in seconds"""
-        return self.config.audio_config.frame_size / self.config.sample_rate
+        return self.config.audio_config.frame_size / self.config.audio_config.sample_rate
 
     def close(self) -> None:
         """closes the receiver"""
@@ -245,17 +127,17 @@ class AudioReceiver(Thread, ABC):
 class ProductionAudioReceiver(AudioReceiver):
     """Production audio receiver"""
 
-    def _init_buffer(self) -> AudioReceiverBuffer:
+    def _init_buffer(self) -> AudioBuffer:
         audio = self.config.audio_config
-        return AudioReceiverBuffer(ProductionAudioReceiverChunk, audio.chunk_size)
+        return AudioBuffer(ProductionAudioChunk, audio.chunk_size)
 
 
 class EvaluationAudioReceiver(AudioReceiver):
     """Evaluation audio receiver"""
 
-    def _init_buffer(self) -> AudioReceiverBuffer:
+    def _init_buffer(self) -> AudioBuffer:
         audio = self.config.audio_config
-        return AudioReceiverBuffer(EvaluationAudioReceiverChunk, audio.chunk_size)
+        return AudioBuffer(EvaluationAudioChunk, audio.chunk_size)
 
     def __init__(self, config: ReceiverConfig,
                  wav_file: str, annotation_file: str, silent: bool) -> None:
@@ -312,7 +194,7 @@ class EvaluationAudioReceiver(AudioReceiver):
             labels = self.sample_timings[start_sample:end_sample]
             self.logger.debug(
                 f"received Samples Shape {received_samples.shape} {labels.shape}")
-            element = EvaluationAudioReceiverElement(
+            element = EvaluationAudioElement(
                 tf.constant(received_samples),
                 tf.constant(played_samples),
                 tf.constant(labels)

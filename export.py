@@ -3,7 +3,8 @@
 import fire
 import numpy as np
 import soundfile
-from lib import utils
+
+from sed_software import utils
 
 
 def main(path_rb: str, path_wav: str, sr: int = 22050, subtype: str = 'FLOAT'):

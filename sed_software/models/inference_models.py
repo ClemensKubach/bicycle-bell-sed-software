@@ -1,11 +1,13 @@
 """Inference Models"""
+
 import logging
+import time
 from abc import ABC, abstractmethod
 from enum import Enum
 
 import tensorflow as tf
 
-from sed_system.saved_models import BaseSavedModel
+from sed_software.models.saved_models import BaseSavedModel
 
 
 class BaseInferenceModel(ABC):
@@ -39,9 +41,21 @@ class BaseInferenceModel(ABC):
 
     def inference(self, sample: tf.Tensor, sample_rate: int):
         """inference"""
+        a = time.perf_counter()
         preprocessed_sample = self.saved_model.preprocess(sample, sample_rate)
+        b = time.perf_counter()
+        print('A', b-a)
+
+        a = time.perf_counter()
         inference_result = self._predict(preprocessed_sample)
+        b = time.perf_counter()
+        print('B', b - a)
+
+        a = time.perf_counter()
         prob, label = self.saved_model.extract_prediction(inference_result)
+        b = time.perf_counter()
+        print('C', b - a)
+
         return prob, label
 
 
@@ -82,10 +96,9 @@ class TFLiteInferenceModel(BaseInferenceModel):
         batched_preprocessed_sample = tf.expand_dims(preprocessed_sample, axis=0)
         self.interpreter.set_tensor(self.tensor_input_details[0]['index'],
                                     batched_preprocessed_sample)
-        self.logger.debug("invoke prediction")
         self.interpreter.invoke()
         # = [[y_pred_prob]] shape=(batch_size, pred)
-        result_tensor = self.interpreter.tensor(self.tensor_output_details[0]['index'])[0]
+        result_tensor = self.interpreter.get_tensor(self.tensor_output_details[0]['index'])[0]
         return result_tensor
 
 
@@ -124,10 +137,9 @@ class TFTensorRTModel(BaseInferenceModel):
         batched_preprocessed_sample = tf.expand_dims(preprocessed_sample, axis=0)
         self.interpreter.set_tensor(self.tensor_input_details[0]['index'],
                                     batched_preprocessed_sample)
-        self.logger.debug("invoke prediction")
         self.interpreter.invoke()
         # = [[y_pred_prob]] shape=(batch_size, pred)
-        result_tensor = self.interpreter.tensor(self.tensor_output_details[0]['index'])[0]
+        result_tensor = self.interpreter.get_tensor(self.tensor_output_details[0]['index'])[0]
         return result_tensor
 
 

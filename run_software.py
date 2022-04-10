@@ -5,13 +5,14 @@ Executable script for running the sound-event-detection system with different pa
 import logging
 from typing import Union
 
-from sed_system import utils
-from sed_system.configurations import ModelSelection, SystemModes, LogLevels, SedSystemConfig, \
-    ReceiverConfig, PredictorConfig, AudioConfig
-from sed_system.inference_models import InferenceModels
-from sed_system.predicting import ProductionPredictorResult, EvaluationPredictorResult
-from sed_system.saved_models import SavedModels
-from sed_system.sed_system import SedSystem
+from sed_software import utils
+from sed_software.data.configs.configs import AudioConfig, SedSoftwareConfig, PredictorConfig, \
+    ReceiverConfig
+from sed_software.selectors.selectors import ModelSelection, SystemModes, LogLevels
+from sed_software.models.inference_models import InferenceModels
+from sed_software.software import SedSoftware
+from sed_software.workers.predicting import ProductionPredictorResult, EvaluationPredictorResult
+from sed_software.models.saved_models import SavedModels
 
 
 def main(tfmodel_path,
@@ -27,11 +28,11 @@ def main(tfmodel_path,
          output_device=None,
          channels=1,
          gpu=False,
-         save_records=True,
+         save_records=False,
 
          sample_rate=16000,
          window_length=2.0,
-         frame_length=0.02,
+         frame_length=0.001,
 
          loglevel: LogLevels = LogLevels.INFO,
          prob_logging=False):
@@ -70,12 +71,12 @@ def main(tfmodel_path,
 
     audio_config = AudioConfig(sample_rate, window_length, frame_length)
 
-    system_config = SedSystemConfig(audio_config,
-                                    mode,
-                                    loglevel,
-                                    gpu,
-                                    save_records)
-    sed = SedSystem(system_config)
+    system_config = SedSoftwareConfig(audio_config,
+                                      mode,
+                                      loglevel,
+                                      gpu,
+                                      save_records)
+    sed = SedSoftware(system_config)
 
     receiver_config = ReceiverConfig(audio_config,
                                      channels,

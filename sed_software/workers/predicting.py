@@ -4,57 +4,23 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from threading import Thread
 from typing import Any
 
 import tensorflow as tf
 
-from sed_system import receiving
-from sed_system.configurations import PredictorConfig
-
-
-@dataclass(frozen=True)
-class Delay:
-    """Dataclass about the delay."""
-    inference: float
-    receiving: float
-
-    @property
-    def max_delay(self):
-        """Sum of all delay parts."""
-        return self.inference + self.receiving
-
-
-@dataclass
-class PredictorResult:
-    """PredictorResult"""
-
-    probability: float
-    label: bool
-    delay: Delay
-
-
-@dataclass
-class ProductionPredictorResult:
-    """ProductionPredictorResult"""
-
-    result: PredictorResult
-
-
-@dataclass
-class EvaluationPredictorResult:
-    """EvaluationPredictorResult"""
-
-    result: PredictorResult
-    result_played: PredictorResult
-    result_ground_truth: PredictorResult
+from sed_software.data.configs.configs import PredictorConfig
+from sed_software.data.predictions.results import PredictorResult, ProductionPredictorResult, \
+    EvaluationPredictorResult
+from sed_software.data.time.delay import Delay
+from sed_software.workers.receiving import AudioReceiver, AudioChunk, \
+    ProductionAudioChunk, EvaluationAudioChunk
 
 
 class Predictor(Thread, ABC):
     """Predictor"""
 
-    def __init__(self, config: PredictorConfig, initialized_receiver: receiving.AudioReceiver):
+    def __init__(self, config: PredictorConfig, initialized_receiver: AudioReceiver):
         super().__init__(daemon=True)
         self.config = config
         self.logger = logging.getLogger(__name__)
@@ -84,7 +50,7 @@ class Predictor(Thread, ABC):
                                Delay(time_end - time_start, self.receiver.delay))
 
     @abstractmethod
-    def _predict(self, receiver_chunk: receiving.AudioReceiverChunk) -> Any:
+    def _predict(self, receiver_chunk: AudioChunk) -> Any:
         """Predict"""
 
     def _run_callback(self, predictor_result: Any):
@@ -97,10 +63,14 @@ class Predictor(Thread, ABC):
     def run(self):
         """run the predictor in another thread"""
         while not self._stop_event.is_set():
+            #a = time.perf_counter()
             latest_chunk = self.receiver.receive_latest_chunk()
+            #b = time.perf_counter()
             if latest_chunk is not None:
+                #print('R', b - a)
                 predictor_result = self._predict(latest_chunk)
                 self._run_callback(predictor_result)
+                # TODO stop Callback Time in Log
 
     def close(self):
         """close predictor"""
@@ -110,7 +80,7 @@ class Predictor(Thread, ABC):
 class ProductionPredictor(Predictor):
     """ProductionPredictor"""
 
-    def _predict(self, receiver_chunk: receiving.ProductionAudioReceiverChunk
+    def _predict(self, receiver_chunk: ProductionAudioChunk
                  ) -> ProductionPredictorResult:
         samples = receiver_chunk.received_samples_chunk
         predictor_result_received = self._predict_for_samples(samples)
@@ -120,7 +90,7 @@ class ProductionPredictor(Predictor):
 class EvaluationPredictor(Predictor):
     """EvaluationPredictor"""
 
-    def _predict(self, receiver_chunk: receiving.EvaluationAudioReceiverChunk
+    def _predict(self, receiver_chunk: EvaluationAudioChunk
                  ) -> EvaluationPredictorResult:
         predictor_result_received = self._predict_for_samples(receiver_chunk.received_samples_chunk)
         predictor_result_played = self._predict_for_samples(receiver_chunk.played_samples_chunk)

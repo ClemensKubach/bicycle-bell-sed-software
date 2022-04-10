@@ -4,7 +4,7 @@ import pickle
 import time
 from typing import Union
 
-from sed_system.receiving import AudioReceiverStorage
+from sed_software.storage.audio.persistent import AudioStorage
 
 
 def samples_to_seconds(samples: Union[int, list], sample_rate: int):
@@ -16,12 +16,12 @@ def samples_to_seconds(samples: Union[int, list], sample_rate: int):
     return length / sample_rate
 
 
-def round_up_div(num_a, num_b):
+def round_up_div(num_a, num_b) -> int:
     """division with round-up(num_a // num_b)"""
-    return num_a // num_b + (num_a % num_b > 0)
+    return int(num_a // num_b + (num_a % num_b > 0))
 
 
-def save_receiver_storage(storage: AudioReceiverStorage, path: str = '') -> None:
+def save_receiver_storage(storage: AudioStorage, path: str = '') -> None:
     """save storage in file"""
     timestamp = time.strftime('%Y.%m.%d-%H.%M')
     with open(f'{path}receiverBuffer-{timestamp}.pickle', 'wb') as file:

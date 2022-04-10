@@ -4,21 +4,20 @@ import logging
 import os
 import threading
 import time
-from abc import ABC
-from typing import Optional, Union
+from typing import Union
 import keyboard
 
-from sed_system import utils
-from sed_system.configurations import SedSystemConfig, SystemModes, LogLevels
-from sed_system.predicting import ProductionPredictor, EvaluationPredictor, PredictorConfig
-from sed_system.receiving import ProductionAudioReceiver, EvaluationAudioReceiver, ReceiverConfig
+from sed_software.data.configs.configs import SedSoftwareConfig
+from sed_software.systems import ProductionSedSystem, EvaluationSedSystem
+from sed_software.utils import save_receiver_storage
+from sed_software.selectors.selectors import SystemModes, LogLevels
 
 
-class SedSystem:
+class SedSoftware:
     """System for sound event detection"""
 
-    def __init__(self, system_config: SedSystemConfig):
-        self.config = system_config
+    def __init__(self, software_config: SedSoftwareConfig):
+        self.config = software_config
         audio = self.config.audio_config
 
         self._setup_logger(self.config.loglevel)
@@ -53,11 +52,16 @@ class SedSystem:
         if loglevel == LogLevels.INFO:
             logger.setLevel(logging.INFO)
             console.setLevel(logging.INFO)
-            logger_format = '%(asctime)s %(levelname)s %(module)s: %(message)s'
+            logger_format = '%(asctime)s %(levelname)s: %(message)s'
             self._separate_delay_log = False
         elif loglevel == LogLevels.DEBUG:
             logger.setLevel(logging.DEBUG)
             console.setLevel(logging.DEBUG)
+            logger_format = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+            self._separate_delay_log = True
+        elif loglevel == LogLevels.ERROR:
+            logger.setLevel(logging.ERROR)
+            console.setLevel(logging.ERROR)
             logger_format = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
             self._separate_delay_log = True
         else:
@@ -97,59 +101,4 @@ class SedSystem:
                 self.system.receiver.close()
                 self.system.predictor.close()
                 if self.config.save_records:
-                    utils.save_receiver_storage(self.system.receiver.storage, './records/')
-
-
-class ModeSedSystem(ABC):
-    """ModeSedSystem"""
-
-    def __init__(self, sample_rate: int, chunk_size: int):
-        self._sample_rate = sample_rate
-        self._chunk_size = chunk_size
-
-        self.logger = logging.getLogger(__name__)
-
-
-class ProductionSedSystem(ModeSedSystem):
-    """ProductionSedSystem"""
-
-    def __init__(self, sample_rate: int, chunk_size: int):
-        super().__init__(sample_rate, chunk_size)
-
-        self.logger.info('Production mode selected')
-        self.predictor: Optional[ProductionPredictor] = None
-        self.receiver: Optional[ProductionAudioReceiver] = None
-
-    def init_receiver(self, config: ReceiverConfig) -> None:
-        """init production receiver"""
-        self.receiver = ProductionAudioReceiver(config)
-
-    def init_predictor(self, config: PredictorConfig) -> None:
-        """init production predictor"""
-        self.predictor = ProductionPredictor(config, self.receiver)
-
-
-class EvaluationSedSystem(ModeSedSystem):
-    """EvaluationSedSystem"""
-
-    def __init__(self, sample_rate: int, chunk_size: int):
-        super().__init__(sample_rate, chunk_size)
-
-        self.logger.info('Evaluation mode selected')
-        self.predictor: Optional[EvaluationPredictor] = None
-        self.receiver: Optional[EvaluationAudioReceiver] = None
-
-    def init_receiver(self, config: ReceiverConfig,
-                      wav_file: str,
-                      annotation_file: str,
-                      silent: bool) -> None:
-        """init evaluation receiver"""
-        silent_txt = 'with' if silent else 'without'
-        self.logger.info(
-            f'Evaluation mode selected {silent_txt} using the direct input of the wave file'
-        )
-        self.receiver = EvaluationAudioReceiver(config, wav_file, annotation_file, silent)
-
-    def init_predictor(self, config: PredictorConfig) -> None:
-        """init evaluation predictor"""
-        self.predictor = EvaluationPredictor(config, self.receiver)
+                    save_receiver_storage(self.system.receiver.storage, './records/')

@@ -1,11 +1,10 @@
 """Configs for all components in the Sed System"""
-from dataclasses import dataclass
-from enum import Enum, auto
-from typing import Optional, Any, Type
 
-from sed_system import utils
-from sed_system.inference_models import InferenceModels, BaseInferenceModel
-from sed_system.saved_models import SavedModels, BaseSavedModel
+from dataclasses import dataclass
+from typing import Optional, Any
+
+from sed_software.selectors.selectors import ModelSelection, SystemModes, LogLevels
+from sed_software.utils import round_up_div
 
 
 @dataclass
@@ -35,31 +34,9 @@ class AudioConfig:
     def __post_init__(self):
         if self.frame_length > self.window_length:
             raise ValueError('Frame time must be shorter than the window time.')
-        self.chunk_size = utils.round_up_div(self.window_length, self.frame_length)
+        self.chunk_size = round_up_div(self.window_length, self.frame_length)
         self.frame_size = int(self.frame_length * self.sample_rate)
         self.window_size = int(self.frame_size * self.chunk_size)
-
-
-class ModelSelection:
-    """Select combination of inference and saved model"""
-
-    def __init__(self,
-                 inference_model: InferenceModels,
-                 saved_model: SavedModels):
-        self.inference_model: Type[BaseInferenceModel] = inference_model.value
-        self.saved_model: Type[BaseSavedModel] = saved_model.value
-
-
-class SystemModes(Enum):
-    """Available modes for the sound-event-detection system."""
-    PRODUCTION = auto()
-    EVALUATION = auto()
-
-
-class LogLevels(Enum):
-    """Available logging levels."""
-    INFO = auto()
-    DEBUG = auto()
 
 
 @dataclass(frozen=True)
@@ -85,7 +62,7 @@ class PredictorConfig:
 
 
 @dataclass(frozen=True)
-class SedSystemConfig:
+class SedSoftwareConfig:
     """Configuration for a sound-event-detection system."""
     audio_config: AudioConfig
     system_mode: SystemModes

@@ -48,8 +48,8 @@ class Mono16kWaveInputSavedModel(BaseSavedModel, ABC):
             sample = tfio.audio.resample(sample, data_sample_rate, self.sample_rate)
         return sample
 
-    def extract_prediction(self, sample_prediction: tf.Tensor) -> tuple:
-        y_pred_prob = sample_prediction[0]  # = [[y_pred_prob]] shape=(batch_size, pred)
+    def extract_prediction(self, sample_prediction: float) -> tuple:
+        y_pred_prob = sample_prediction
         y_pred_label = bool(y_pred_prob > self.threshold)
         return y_pred_prob, y_pred_label
 
