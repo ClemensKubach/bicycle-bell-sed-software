@@ -4,8 +4,9 @@ import logging
 import threading
 from typing import Type, Union, Optional
 
-from seds_lib.data.audio.chunks import ProductionAudioChunk, EvaluationAudioChunk
-from seds_lib.data.audio.elements import AudioElement
+from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
+from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
+from seds_cli.seds_lib.data.audio.elements import AudioElement
 
 
 class AudioBuffer:

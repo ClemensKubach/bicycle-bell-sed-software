@@ -3,8 +3,10 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
-from seds_lib.selectors.selectors import ModelSelection, SystemModes, LogLevels
-from seds_lib.utils.audio_maths import round_up_div
+from seds_cli.seds_lib.selectors.selectors import ModelSelection
+from seds_cli.seds_lib.selectors.selectors import SystemModes
+from seds_cli.seds_lib.selectors.selectors import LogLevels
+from seds_cli.seds_lib.utils.audio_maths import round_up_div
 
 
 @dataclass

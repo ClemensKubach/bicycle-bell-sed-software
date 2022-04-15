@@ -16,12 +16,14 @@ import tensorflow as tf
 import tensorflow_io as tfio
 import pyaudio
 
-from seds_lib.data.audio.chunks import ProductionAudioChunk, EvaluationAudioChunk
-from seds_lib.data.audio.elements import AudioElement, EvaluationAudioElement
-from seds_lib.data.configs.configs import ReceiverConfig
-from seds_lib.data.time.delay import ReceiverDelay
-from seds_lib.storage.audio.persistent import AudioStorage
-from seds_lib.storage.audio.temporary import AudioBuffer
+from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
+from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
+from seds_cli.seds_lib.data.audio.elements import AudioElement
+from seds_cli.seds_lib.data.audio.elements import EvaluationAudioElement
+from seds_cli.seds_lib.data.configs.configs import ReceiverConfig
+from seds_cli.seds_lib.data.time.delay import ReceiverDelay
+from seds_cli.seds_lib.storage.audio.persistent import AudioStorage
+from seds_cli.seds_lib.storage.audio.temporary import AudioBuffer
 
 
 class AudioReceiver(Thread, ABC):
@@ -119,16 +121,16 @@ class AudioReceiver(Thread, ABC):
         For this, the time is measured for random samples and saved into the delay attribute
         of the receiver (access via receiver_instance.delay).
         """
+        start_time = None
         with self._lock:
             if self._measure_time:
                 start_time = time.perf_counter()
         audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
-        print(audio_as_np_float32)
         element = AudioElement(tf.constant(audio_as_np_float32))
         self.buffer.add_element(element)
         self.storage.add_element(element)
         with self._lock:
-            if self._measure_time:
+            if self._measure_time and start_time is not None:
                 end_time = time.perf_counter()
                 self._stream_callback_time = end_time - start_time
                 self._measure_time = False

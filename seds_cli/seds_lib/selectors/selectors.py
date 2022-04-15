@@ -3,10 +3,14 @@
 from enum import Enum, auto
 from typing import Type
 
-from seds_lib.models.inference_models import BaseInferenceModel, TFLiteInferenceModel, \
-    TFTensorRTModel
-from seds_lib.models.saved_models import BaseSavedModel, CrnnSavedModel, \
-    YamNetBaseSavedModel, YamNetExtendedSavedModel, Mono16kWaveInputSavedModel
+from seds_cli.seds_lib.models.inference_models import BaseInferenceModel
+from seds_cli.seds_lib.models.inference_models import TFLiteInferenceModel
+from seds_cli.seds_lib.models.inference_models import TFTensorRTModel
+from seds_cli.seds_lib.models.saved_models import BaseSavedModel
+from seds_cli.seds_lib.models.saved_models import CrnnSavedModel
+from seds_cli.seds_lib.models.saved_models import YamNetBaseSavedModel
+from seds_cli.seds_lib.models.saved_models import YamNetExtendedSavedModel
+from seds_cli.seds_lib.models.saved_models import Mono16kWaveInputSavedModel
 
 
 class InferenceModels(Enum):

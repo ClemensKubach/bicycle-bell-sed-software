@@ -9,12 +9,18 @@ from typing import Any, Union
 
 import tensorflow as tf
 
-from seds_lib.data.audio.chunks import AudioChunk
-from seds_lib.data.configs.configs import PredictorConfig
-from seds_lib.data.predictions.results import PredictorResult, ProductionPredictorResult, \
-    EvaluationPredictorResult
-from seds_lib.data.time.delay import Delay, PredictorDelay, ChunkDelay
-from seds_lib.workers.receiving import AudioReceiver, ProductionAudioChunk, EvaluationAudioChunk
+from seds_cli.seds_lib.data.audio.chunks import AudioChunk
+from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
+from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
+from seds_cli.seds_lib.data.configs.configs import PredictorConfig
+from seds_cli.seds_lib.data.predictions.results import PredictorResult
+from seds_cli.seds_lib.data.predictions.results import ProductionPredictorResult
+from seds_cli.seds_lib.data.predictions.results import EvaluationPredictorResult
+from seds_cli.seds_lib.data.time.delay import Delay
+from seds_cli.seds_lib.data.time.delay import PredictorDelay
+from seds_cli.seds_lib.data.time.delay import ChunkDelay
+
+from seds_cli.seds_lib.workers.receiving import AudioReceiver
 
 
 class Predictor(Thread, ABC):

@@ -4,10 +4,12 @@ import logging
 from abc import ABC
 from typing import Optional
 
-from seds_lib.data.configs.configs import ReceiverConfig
-from seds_lib.workers.predicting import ProductionPredictor, EvaluationPredictor, \
-    PredictorConfig
-from seds_lib.workers.receiving import ProductionAudioReceiver, EvaluationAudioReceiver
+from seds_cli.seds_lib.data.configs.configs import ReceiverConfig
+from seds_cli.seds_lib.data.configs.configs import PredictorConfig
+from seds_cli.seds_lib.workers.predicting import ProductionPredictor
+from seds_cli.seds_lib.workers.predicting import EvaluationPredictor
+from seds_cli.seds_lib.workers.receiving import ProductionAudioReceiver
+from seds_cli.seds_lib.workers.receiving import EvaluationAudioReceiver
 
 
 class ModeSedSystem(ABC):

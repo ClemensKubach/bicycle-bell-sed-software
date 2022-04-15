@@ -5,12 +5,20 @@ Executable script for running the sound-event-detection system with different pa
 import logging
 from typing import Union
 
-from seds_lib.data.configs.configs import AudioConfig, SedSoftwareConfig, PredictorConfig, \
-    ReceiverConfig
-from seds_lib.selectors.selectors import ModelSelection, SystemModes, LogLevels, \
-    InferenceModels, SavedModels
-from seds_lib.software import SedSoftware
-from seds_lib.workers.predicting import ProductionPredictorResult, EvaluationPredictorResult
+import fire
+
+from seds_cli.seds_lib.data.configs.configs import AudioConfig
+from seds_cli.seds_lib.data.configs.configs import SedSoftwareConfig
+from seds_cli.seds_lib.data.configs.configs import PredictorConfig
+from seds_cli.seds_lib.data.configs.configs import ReceiverConfig
+from seds_cli.seds_lib.selectors.selectors import ModelSelection
+from seds_cli.seds_lib.selectors.selectors import SystemModes
+from seds_cli.seds_lib.selectors.selectors import LogLevels
+from seds_cli.seds_lib.selectors.selectors import InferenceModels
+from seds_cli.seds_lib.selectors.selectors import SavedModels
+from seds_cli.seds_lib.software import SedSoftware
+from seds_cli.seds_lib.data.predictions.results import ProductionPredictorResult
+from seds_cli.seds_lib.data.predictions.results import EvaluationPredictorResult
 
 
 def main(tfmodel_path,
@@ -102,5 +110,4 @@ def main(tfmodel_path,
 
 
 if __name__ == '__main__':
-    # fire.Fire(main)
-    main('models/crnn/')
+    fire.Fire(main)

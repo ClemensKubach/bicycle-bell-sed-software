@@ -4,7 +4,8 @@ from typing import Protocol
 
 import tensorflow as tf
 
-from seds_lib.data.audio.elements import ProductionAudioElement, EvaluationAudioElement
+from seds_cli.seds_lib.data.audio.elements import ProductionAudioElement
+from seds_cli.seds_lib.data.audio.elements import EvaluationAudioElement
 
 
 def _concat_samples(samples_chunk: list[tf.Tensor]) -> tf.Tensor:

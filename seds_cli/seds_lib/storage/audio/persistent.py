@@ -3,10 +3,11 @@
 import logging
 from typing import Union
 
-from seds_lib.utils import audio_maths
-from seds_lib.data.audio.chunks import ProductionAudioElement, EvaluationAudioElement
-from seds_lib.data.audio.elements import AudioElement
-from seds_lib.data.configs import AudioConfig
+from seds_cli.seds_lib.utils import audio_maths
+from seds_cli.seds_lib.data.audio.elements import ProductionAudioElement
+from seds_cli.seds_lib.data.audio.elements import EvaluationAudioElement
+from seds_cli.seds_lib.data.audio.elements import AudioElement
+from seds_cli.seds_lib.data.configs.configs import AudioConfig
 
 
 class AudioStorage:

@@ -6,10 +6,12 @@ import threading
 import time
 from typing import Union
 
-from seds_lib.data.configs.configs import SedSoftwareConfig
-from seds_lib.systems import ProductionSedSystem, EvaluationSedSystem
-from seds_lib.utils import file_utils
-from seds_lib.selectors.selectors import SystemModes, LogLevels
+from seds_cli import seds_constants
+from seds_cli.seds_lib.data.configs.configs import SedSoftwareConfig
+from seds_cli.seds_lib.systems import ProductionSedSystem
+from seds_cli.seds_lib.systems import EvaluationSedSystem
+from seds_cli.seds_lib.utils import file_utils
+from seds_cli.seds_lib.selectors.selectors import SystemModes, LogLevels
 
 
 class SedSoftware:
@@ -70,7 +72,10 @@ class SedSoftware:
             raise ValueError(msg)
 
         timestamp = time.strftime('%Y.%m.%d-%H.%M.%S')
-        logging.basicConfig(format=logger_format, filename=f'./logs/{timestamp}.log')
+        logging.basicConfig(
+            format=logger_format,
+            filename=os.path.join(seds_constants.RES_LOGS_PATH, f'{timestamp}.log')
+        )
         formatter = logging.Formatter(logger_format)
         console.setFormatter(formatter)
         logging.getLogger().addHandler(console)
@@ -100,4 +105,7 @@ class SedSoftware:
             pickle_lock = threading.Lock()
             with pickle_lock:
                 if self.config.save_records and self.system.receiver.storage.current_size > 0:
-                    file_utils.save_audio_storage(self.system.receiver.storage, './records/')
+                    file_utils.save_audio_storage(
+                        self.system.receiver.storage,
+                        seds_constants.RES_RECORDS_PATH
+                    )

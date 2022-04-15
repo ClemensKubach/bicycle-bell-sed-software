@@ -132,7 +132,12 @@ dmypy.json
 *.pickle
 
 # tflite
-models/*.tflite
+*.tflite
+
+# tftrt
+*.tftrt
 
 # ide
 .idea/
+
+/venv36

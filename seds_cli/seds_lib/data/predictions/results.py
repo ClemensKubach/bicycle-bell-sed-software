@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from seds_lib.data.time.delay import Delay
+from seds_cli.seds_lib.data.time.delay import Delay
 
 
 @dataclass

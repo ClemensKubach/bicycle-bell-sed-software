@@ -5,7 +5,8 @@ import logging
 import fire
 import tensorflow as tf
 
-from seds_lib.utils import audio_maths, file_utils
+from seds_cli.seds_lib.utils import audio_maths
+from seds_cli.seds_lib.utils import file_utils
 
 
 def main(path_storage_pickle: str, target_wav_path: str, sample_rate: int = 16000):

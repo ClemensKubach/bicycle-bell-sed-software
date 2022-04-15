@@ -2,12 +2,14 @@
 for unified usage."""
 
 import logging
+import os.path
 from abc import ABC, abstractmethod
 
 import tensorflow as tf
 from tensorflow.python.saved_model import tag_constants
 
-from seds_lib.models.saved_models import BaseSavedModel
+from seds_cli import seds_constants
+from seds_cli.seds_lib.models.saved_models import BaseSavedModel
 
 
 class BaseInferenceModel(ABC):
@@ -61,7 +63,7 @@ class TFLiteInferenceModel(BaseInferenceModel):
 
     @property
     def _converted_model_path(self) -> str:
-        return './models/converted-model.tflite'
+        return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tflite')
 
     def _convert_model(self):
         converter = tf.lite.TFLiteConverter.from_saved_model(self.saved_model.saved_model_path)
@@ -108,7 +110,7 @@ class TFTensorRTModel(BaseInferenceModel):
 
     @property
     def _converted_model_path(self) -> str:
-        return './models/converted-model.tftrt'
+        return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tftrt')
 
     def _convert_model(self):
         params = tf.experimental.tensorrt.ConversionParams(
