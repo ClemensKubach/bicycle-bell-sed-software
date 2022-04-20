@@ -11,7 +11,6 @@ from typing import Optional, Union
 from random import randint
 
 import numpy as np
-from tqdm import tqdm
 import tensorflow as tf
 import tensorflow_io as tfio
 import pyaudio
@@ -229,7 +228,7 @@ class EvaluationAudioReceiver(AudioReceiver):
                 end = int(seconds_timing_pair[1] * audio.sample_rate)  # end time
                 sample_timings.append((start, end))
             self.sample_timings = np.zeros(shape=self.wav.shape)
-            for start, end in tqdm(sample_timings):
+            for start, end in sample_timings:
                 for i in range(start, end):
                     self.sample_timings[i] = True
 
@@ -254,7 +253,8 @@ class EvaluationAudioReceiver(AudioReceiver):
                 received_samples = np.fromstring(in_data, dtype=np.float32)[0::self.config.channels]
             labels = self.sample_timings[start_sample:end_sample]
             self._logger.debug(
-                f"received Samples Shape {received_samples.shape} {labels.shape}")
+                f"received Samples Shape {received_samples.shape} {labels.shape}"
+            )
             element = EvaluationAudioElement(
                 tf.constant(received_samples),
                 tf.constant(played_samples),

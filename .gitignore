@@ -140,4 +140,4 @@ dmypy.json
 # ide
 .idea/
 
-/venv36
+/venv*

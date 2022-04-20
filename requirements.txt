@@ -1,7 +1,6 @@
+tensorflow>=2.6.2,<=2.8.0
+tensorflow_io>=0.21.0,<=0.24.0
+numpy
 pyaudio~=0.2.11
-keyboard
-numpy~=1.22.3
 fire~=0.4.0
-tensorflow
-tqdm
-soundfile~=0.10.3.post1
+dataclasses>=0.8; python_version < '3.7'

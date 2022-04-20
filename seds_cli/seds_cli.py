@@ -1,9 +1,7 @@
 """
 Executable script for running the sound-event-detection system with different parametrizations.
 """
-
-import logging
-from typing import Union
+from typing import Any, Optional
 
 import fire
 
@@ -17,97 +15,139 @@ from seds_cli.seds_lib.selectors.selectors import LogLevels
 from seds_cli.seds_lib.selectors.selectors import InferenceModels
 from seds_cli.seds_lib.selectors.selectors import SavedModels
 from seds_cli.seds_lib.software import SedSoftware
-from seds_cli.seds_lib.data.predictions.results import ProductionPredictorResult
-from seds_cli.seds_lib.data.predictions.results import EvaluationPredictorResult
 
 
-def main(tfmodel_path,
-         mode: SystemModes = SystemModes.PRODUCTION,
-         silent=False,
-         use_input=True,
-         use_output=False,
-         storage_length=0,
-         wav_file=None,
-         annotation_file=None,
+class SedsCli:
+    """Highly configurable execution script
+    """
 
-         input_device=None,
-         output_device=None,
-         channels=1,
-         gpu=False,
-         save_records=False,
+    def __init__(self,
+                 tfmodel_path: str,
 
-         sample_rate=16000,
-         window_length=2.0,
-         frame_length=0.001,
+                 threshold: float = 0.5,
+                 channels: int = 1,
 
-         threshold=0.5,
-         callback=None,
-         infer_model: InferenceModels = InferenceModels.TFLITE,
-         saved_model: SavedModels = SavedModels.CRNN,
+                 gpu: bool = False,
+                 infer_model: InferenceModels = InferenceModels.TFLITE,
+                 saved_model: SavedModels = SavedModels.CRNN,
 
-         loglevel: LogLevels = LogLevels.INFO,
-         prob_logging=False):
-    """Highly configurable execution script."""
+                 storage_length: int = 0,
+                 save_records: bool = False,
 
-    def custom_callback(
-            predictor_result: Union[ProductionPredictorResult, EvaluationPredictorResult]):
-        _logger = logging.getLogger(__name__)
-        window_time = sed.config.audio_config.window_length
-        res = predictor_result
-        max_frame_delay = res.result.delay.predicting_delay.chunk_delay.max_in_buffer_waiting_time
-        total_delay = res.result.delay.delay
+                 use_input: bool = True,
+                 use_output: bool = False,
 
-        if mode == SystemModes.PRODUCTION:
-            prob_print = f' [{res.result.probability:.2f}]' if prob_logging else ''
-            _logger.info(f'Prediction for the past {window_time:.3f}sec: '
-                         f'{res.result.label}{prob_print} | delay: '
-                         f'{total_delay-max_frame_delay:.3f}-{total_delay:.3f}sec')
-        else:
-            if prob_logging:
-                received_print = f'{res.result.label} [{res.result.probability:.2f}]'
-                played_print = f'{res.result_played.label} [{res.result_played.probability:.2f}]'
-                gt_print = f'{res.result_ground_truth.label}' \
-                           f' [{res.result_ground_truth.probability:.2f}]'
-            else:
-                received_print = f'{res.result.label}'
-                played_print = f'{res.result_played.label}'
-                gt_print = f'{res.result_ground_truth.label}'
-            _logger.info(f'Prediction of the past {window_time:.3f}sec: '
-                         f'{received_print} received, {played_print} played, {gt_print} '
-                         f'ground-truth | delay: '
-                         f'{total_delay-max_frame_delay:.3f}-{total_delay:.3f}sec')
+                 input_device: int = None,
+                 output_device: int = None,
 
-    audio_config = AudioConfig(sample_rate, window_length, frame_length)
+                 sample_rate: int = 16000,
+                 window_length: float = 2.0,
+                 frame_length: float = 0.001,
 
-    system_config = SedSoftwareConfig(audio_config,
-                                      mode,
-                                      loglevel,
-                                      gpu,
-                                      save_records)
-    sed = SedSoftware(system_config)
+                 callback: Any = None,
+                 loglevel: LogLevels = LogLevels.INFO,
+                 ):
+        self.tfmodel_path = tfmodel_path
+        self.threshold = threshold
+        self.channels = channels
+        self.gpu = gpu
+        self.infer_model = infer_model
+        self.saved_model = saved_model
+        self.storage_length = storage_length
+        self.save_records = save_records
+        self.use_input = use_input
+        self.use_output = use_output
+        self.input_device = input_device
+        self.output_device = output_device
+        self.sample_rate = sample_rate
+        self.window_length = window_length
+        self.frame_length = frame_length
+        self.callback = callback
+        self.loglevel = loglevel
 
-    receiver_config = ReceiverConfig(audio_config,
-                                     channels,
-                                     use_input,
-                                     input_device,
-                                     use_output,
-                                     output_device,
-                                     storage_length)
-    if mode == SystemModes.PRODUCTION:
-        sed.system.init_receiver(receiver_config)
-    elif mode == SystemModes.EVALUATION:
-        sed.system.init_receiver(receiver_config, wav_file, annotation_file, silent)
+        # mode specific parameters
+        self.mode: Optional[SystemModes] = None
+        self.silent: bool = False
+        self.wav_file: Optional[str] = None
+        self.annotation_file: Optional[str] = None
 
-    selected_model = ModelSelection(infer_model, saved_model)
-    predictor_config = PredictorConfig(audio_config,
-                                       tfmodel_path,
-                                       selected_model,
-                                       threshold,
-                                       callback)
-    sed.system.init_predictor(predictor_config)
+    def production(self):
+        self.mode = SystemModes.PRODUCTION
+        self._execute()
 
-    sed.start()
+    def evaluation(self,
+                   wav_file: str,
+                   annotation_file: str,
+                   silent: bool = False,
+                   ):
+        if wav_file is None or annotation_file is None:
+            raise FileNotFoundError('Paths to wave and corresponding csv file containing '
+                                    'annotations have to be given correctly!')
+
+        self.mode: SystemModes = SystemModes.EVALUATION
+        self.silent = silent
+        self.wav_file = wav_file
+        self.annotation_file = annotation_file
+        self._execute()
+
+    def _execute(self):
+        if self.mode is None:
+            raise ValueError('Mode {production|evaluation} have to be chosen. '
+                             'See --help for further details.')
+
+        audio_config = AudioConfig(
+            self.sample_rate,
+            self.window_length,
+            self.frame_length
+        )
+
+        system_config = SedSoftwareConfig(
+            audio_config,
+            self.mode,
+            self.loglevel,
+            self.gpu,
+            self.save_records
+        )
+        sed = SedSoftware(system_config)
+
+        receiver_config = ReceiverConfig(
+            audio_config,
+            self.channels,
+            self.use_input,
+            self.input_device,
+            self.use_output,
+            self.output_device,
+            self.storage_length
+        )
+        if self.mode == SystemModes.PRODUCTION:
+            sed.system.init_receiver(receiver_config)
+        elif self.mode == SystemModes.EVALUATION:
+            sed.system.init_receiver(
+                receiver_config,
+                self.wav_file,
+                self.annotation_file,
+                self.silent
+            )
+
+        selected_model = ModelSelection(
+            self.infer_model,
+            self.saved_model
+        )
+        predictor_config = PredictorConfig(
+            audio_config,
+            self.tfmodel_path,
+            selected_model,
+            self.threshold,
+            self.callback
+        )
+        sed.system.init_predictor(predictor_config)
+
+        sed.start()
+
+
+def main():
+    fire.Fire(SedsCli)
 
 
 if __name__ == '__main__':
-    fire.Fire(main)
+    main()

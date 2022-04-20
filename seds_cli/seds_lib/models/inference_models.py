@@ -66,7 +66,10 @@ class TFLiteInferenceModel(BaseInferenceModel):
         return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tflite')
 
     def _convert_model(self):
-        converter = tf.lite.TFLiteConverter.from_saved_model(self.saved_model.saved_model_path)
+        converter = tf.lite.TFLiteConverter.from_saved_model(
+            self.saved_model.saved_model_path,
+            tags={tf.saved_model.SERVING}
+        )
         converter.experimental_new_converter = True
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
                                                tf.lite.OpsSet.SELECT_TF_OPS]
@@ -157,7 +160,7 @@ class TFTensorRTModel(BaseInferenceModel):
 
     def _prepare_interpreter(self):
         loaded_converted_model = tf.saved_model.load(self._converted_model_path,
-                                                     tags=[tag_constants.SERVING])
+                                                     tags={tag_constants.SERVING})
         self.interpreter = loaded_converted_model.signatures['serving_default']
 
     def _predict(self, preprocessed_sample: tf.Tensor) -> float:

@@ -1,7 +1,7 @@
 """Module for a persistent audio storage"""
 
 import logging
-from typing import Union
+from typing import Union, List
 
 from seds_cli.seds_lib.utils import audio_maths
 from seds_cli.seds_lib.data.audio.elements import ProductionAudioElement
@@ -42,6 +42,6 @@ class AudioStorage:
         if self.keep_all or len(self._storage) < self.storage_size:
             self._storage.append(element)
 
-    def get_elements(self) -> list[Union[ProductionAudioElement, EvaluationAudioElement]]:
+    def get_elements(self) -> List[Union[ProductionAudioElement, EvaluationAudioElement]]:
         """Get list of elements from the storage"""
         return self._storage

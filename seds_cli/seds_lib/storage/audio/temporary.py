@@ -2,7 +2,7 @@
 
 import logging
 import threading
-from typing import Type, Union, Optional
+from typing import Type, Union, Optional, List
 
 from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
 from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
@@ -29,8 +29,8 @@ class AudioBuffer:
 
         self._logger = logging.getLogger(__name__)
         self._lock = threading.Lock()
-        self._buffer: list[AudioElement] = []
-        self._previous_slice: Optional[list[AudioElement]] = None
+        self._buffer: List[AudioElement] = []
+        self._previous_slice: Optional[List[AudioElement]] = None
 
     @property
     def current_buffer_size(self) -> int:
