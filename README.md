@@ -1,4 +1,6 @@
-# thesis-embedded-sed-deployment
+# Bicycle Bell SED Software
+
+(README deprecated, will be updated soon)
 
 **Author: Clemens Kubach**
 
