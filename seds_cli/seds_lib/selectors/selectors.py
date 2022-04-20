@@ -13,6 +13,12 @@ from seds_cli.seds_lib.models.saved_models import YamNetExtendedSavedModel
 from seds_cli.seds_lib.models.saved_models import Mono16kWaveInputSavedModel
 
 
+class AutoName(Enum):
+    """Since Python 3.6"""
+    def _generate_next_value_(name, start, count, last_values):
+        return name.lower()
+
+
 class InferenceModels(Enum):
     """Inference Model Selector"""
     TFLITE = TFLiteInferenceModel
@@ -37,13 +43,13 @@ class ModelSelection:
         self.saved_model: Type[BaseSavedModel] = saved_model.value
 
 
-class SystemModes(Enum):
+class SystemModes(AutoName):
     """Selector for available modes of the sound-event-detection system."""
     PRODUCTION = auto()
     EVALUATION = auto()
 
 
-class LogLevels(Enum):
+class LogLevels(AutoName):
     """Selector for available logging levels."""
     INFO = auto()
     DEBUG = auto()

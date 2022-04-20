@@ -21,7 +21,7 @@ class SedSoftware:
         self.config = software_config
         audio = self.config.audio_config
 
-        self._setup_logger(self.config.loglevel)
+        self._setup_logger(self.config.loglevel, self.config.save_log)
         self._setup_system(self.config.system_mode, audio.sample_rate, audio.chunk_size)
         self._show_gpu_setting(self.config.gpu)
 
@@ -48,34 +48,36 @@ class SedSoftware:
             self._logger.error(msg)
             raise ValueError(msg)
 
-    def _setup_logger(self, loglevel: LogLevels):
+    def _setup_logger(self, loglevel: LogLevels, save_log: bool):
         """Procedure for initializing the logging config."""
         logger = logging.getLogger()
         console = logging.StreamHandler()
-        if loglevel == LogLevels.INFO:
+        if LogLevels(loglevel) == LogLevels.INFO:
             logger.setLevel(logging.INFO)
             console.setLevel(logging.INFO)
             logger_format = '%(asctime)s %(levelname)s: %(message)s'
             self._separate_delay_log = False
-        elif loglevel == LogLevels.DEBUG:
+        elif LogLevels(loglevel) == LogLevels.DEBUG:
             logger.setLevel(logging.DEBUG)
             console.setLevel(logging.DEBUG)
             logger_format = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
             self._separate_delay_log = True
-        elif loglevel == LogLevels.ERROR:
+        elif LogLevels(loglevel) == LogLevels.ERROR:
             logger.setLevel(logging.ERROR)
             console.setLevel(logging.ERROR)
             logger_format = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
             self._separate_delay_log = True
         else:
-            msg = f'Loglevel {loglevel} is not a valid loglevel! It must be of type LogLevels.'
+            msg = f'{loglevel} is not a valid loglevel! ' \
+                  f'It must be one of the defined levels in LogLevels.'
             raise ValueError(msg)
 
-        timestamp = time.strftime('%Y.%m.%d-%H.%M.%S')
-        logging.basicConfig(
-            format=logger_format,
-            filename=os.path.join(seds_constants.RES_LOGS_PATH, f'{timestamp}.log')
-        )
+        if save_log:
+            timestamp = time.strftime('%Y.%m.%d-%H.%M.%S')
+            logging.basicConfig(
+                format=logger_format,
+                filename=os.path.join(seds_constants.RES_LOGS_PATH, f'{timestamp}.log')
+            )
         formatter = logging.Formatter(logger_format)
         console.setFormatter(formatter)
         logging.getLogger().addHandler(console)

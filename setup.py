@@ -1,7 +1,12 @@
 from setuptools import setup
+import os
+
+readme_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')
+with open(readme_path, "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(
-    name='bicycle_bell_seds_cli',
+    name='bicycle-bell-seds-cli',
     version='0.0.1',
     packages=['seds_cli', 'seds_cli.seds_lib', 'seds_cli.seds_lib.data',
               'seds_cli.seds_lib.data.time', 'seds_cli.seds_lib.data.audio',
@@ -10,10 +15,15 @@ setup(
               'seds_cli.seds_lib.storage.audio', 'seds_cli.seds_lib.workers',
               'seds_cli.seds_lib.selectors', 'bicycle_bell_seds'],
     url='https://github.com/ClemensKubach/bicycle-bell-sed-software',
+    project_urls={
+        "Bug Tracker": "https://github.com/ClemensKubach/bicycle-bell-sed-software/issues"
+    },
     license='MIT License',
     author='Clemens Kubach',
     author_email='clemens.kubach@gmail.com',
-    description='',
+    description='CLI software for single target sound event detection of bicycle bell signals.',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     install_requires=[
         'tensorflow>=2.6.2',
         'tensorflow_io>=0.21.0',
@@ -30,9 +40,11 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'seds_bb_desktop=bicycle_bell_seds.run_desktop_bicycle_bell_seds:main',
-            'seds_bb_jn=bicycle_bell_seds.run_jn_bicycle_bell_seds:main',
-            'seds_cli=seds_cli.seds_cli:main'
+            'seds-bb-desktop=bicycle_bell_seds.run_desktop_bicycle_bell_seds:main',
+            'seds-bb-jn=bicycle_bell_seds.run_jn_bicycle_bell_seds:main',
+            'seds-cli=seds_cli.seds_cli:main',
+            'seds-res-dir=seds_cli.seds_constants:print_res_location'
         ],
     },
+
 )

@@ -1,11 +1,25 @@
+"""Module for defining custom callback functions.
+
+Such a function have to follow the predefined interface:
+
+```
+def name_of_my_callback(
+    predictor_result: Union[ProductionPredictorResult, EvaluationPredictorResult]
+) -> None:
+    pass
+    # custom code
+```
+"""
+
 import logging
-from typing import Union
+from typing import Union, Any
 
 from seds_cli.seds_lib.data.predictions.results import ProductionPredictorResult
 from seds_cli.seds_lib.data.predictions.results import EvaluationPredictorResult
 
 
-def get_custom_logging_callback(window_length, prob_logging):
+def get_custom_logging_callback(window_length, prob_logging) -> Any:
+    """Returns a parameterized callback function with extended logging."""
 
     def custom_callback(
             predictor_result: Union[ProductionPredictorResult, EvaluationPredictorResult]):

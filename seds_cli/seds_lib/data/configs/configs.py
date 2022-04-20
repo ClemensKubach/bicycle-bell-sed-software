@@ -136,11 +136,14 @@ class SedSoftwareConfig:
         gpu (bool)
             Defines whether the gpu of the machine should be used.
         save_records (bool)
-            Defines whether the records of the length of storage_length should be stored on disk,
+            Defines whether the records of the length of storage_length should be stored on disk
             at the program end.
+        save_log (bool)
+            Defines whether the log output should be stored on disk.
     """
     audio_config: AudioConfig
     system_mode: SystemModes
     loglevel: LogLevels
     gpu: bool
     save_records: bool
+    save_log: bool
