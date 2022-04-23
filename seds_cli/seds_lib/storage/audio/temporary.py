@@ -7,6 +7,8 @@ from typing import Type, Union, Optional, List
 from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
 from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
 from seds_cli.seds_lib.data.audio.elements import AudioElement
+from seds_cli.seds_lib.data.configs.configs import AudioConfig
+from seds_cli.seds_lib.utils import audio_maths
 
 
 class AudioBuffer:
@@ -17,15 +19,15 @@ class AudioBuffer:
     Args:
         cls
             class name of ProductionAudioChunk or EvaluationAudioChunk
-        chunk_size
-            number of elements per chunk
+        audio_config
+            audio config data.
     """
 
     def __init__(self,
                  cls: Type[Union[ProductionAudioChunk, EvaluationAudioChunk]],
-                 chunk_size: int):
+                 audio_config: AudioConfig):
         self.cls = cls
-        self.chunk_size = chunk_size
+        self.audio_config = audio_config
 
         self._logger = logging.getLogger(__name__)
         self._lock = threading.Lock()
@@ -46,35 +48,38 @@ class AudioBuffer:
 
     def reset(self):
         """clear buffer"""
-        with self._lock:
-            self._buffer = []
+        self._buffer = []
 
     def _get_latest_n_slice(self, n: int):
         """get the last n elements of the buffer as list slice"""
-        with self._lock:
-            return self._buffer[-n:]
+        return self._buffer[-n:]
 
-    def get_latest_chunk(self) -> Optional[Union[ProductionAudioChunk,
-                                                 EvaluationAudioChunk]]:
+    def extract_latest_chunk(self) -> Optional[Union[ProductionAudioChunk,
+                                                     EvaluationAudioChunk]]:
         """Get the latest chunk from the buffer with concatenated samples.
 
         Notes:
-            TODO Some elements can get lost
+            If the delay is greater than window_length, the samples older than
+            window_length seconds will be ignored. This prevents a permanent effect of an
+            unexpected and spontaneous lag on the delay of the system.
         """
-        currently_buffered = self.current_buffer_size
-        if self._previous_slice is None and currently_buffered < self.chunk_size:
-            return None
-        if currently_buffered == 0:
-            return None
-        extracting_count = min(currently_buffered, self.chunk_size)
-        # if buffer is larger than chunk_size, just take the newest for not increasing the delay
-        # negative effect: some samples can get lost, but only if the predictor delay is
-        # larger as the ...
-        latest_slice = self._get_latest_n_slice(extracting_count)
-        self.reset()
-        complement_size = self.chunk_size - extracting_count
+        with self._lock:
+            currently_buffered = len(self._buffer)
+            if self._previous_slice is None and currently_buffered < self.audio_config.chunk_size:
+                return None
+            if currently_buffered == 0:
+                return None
+            if currently_buffered > self.audio_config.chunk_size:
+                lost_seconds = (self.audio_config.chunk_size - currently_buffered) * \
+                               self.audio_config.frame_length
+                self._logger.warning(f'The buffer was full and {lost_seconds:.3f} seconds were '
+                                     f'skipped from {self.audio_config.window_length:.3f} seconds '
+                                     'ago to avoid increasing the delay permanently.')
+            extracting_count = min(currently_buffered, self.audio_config.chunk_size)
+            latest_slice = self._get_latest_n_slice(extracting_count)
+            self.reset()
+        complement_size = self.audio_config.chunk_size - extracting_count
         complement_slice = [] if complement_size == 0 else self._previous_slice[-complement_size:]
         new_slice: list = complement_slice + latest_slice
         self._previous_slice = new_slice
-        # TODO lost elements proving and note
         return self.cls(new_slice, extracting_count)

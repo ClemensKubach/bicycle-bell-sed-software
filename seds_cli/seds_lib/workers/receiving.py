@@ -138,7 +138,7 @@ class AudioReceiver(Thread, ABC):
     def receive_latest_chunk(self) -> Optional[Union[ProductionAudioChunk,
                                                      EvaluationAudioChunk]]:
         """Returns the latest chunk from the buffer. Should be called from another thread."""
-        chunk = self.buffer.get_latest_chunk()
+        chunk = self.buffer.extract_latest_chunk()
         return chunk
 
     @property
@@ -178,8 +178,7 @@ class ProductionAudioReceiver(AudioReceiver):
     """
 
     def _init_buffer(self) -> AudioBuffer:
-        audio = self.config.audio_config
-        return AudioBuffer(ProductionAudioChunk, audio.chunk_size)
+        return AudioBuffer(ProductionAudioChunk, self.config.audio_config)
 
 
 class EvaluationAudioReceiver(AudioReceiver):
@@ -196,8 +195,7 @@ class EvaluationAudioReceiver(AudioReceiver):
     """
 
     def _init_buffer(self) -> AudioBuffer:
-        audio = self.config.audio_config
-        return AudioBuffer(EvaluationAudioChunk, audio.chunk_size)
+        return AudioBuffer(EvaluationAudioChunk, self.config.audio_config)
 
     def __init__(self, config: ReceiverConfig,
                  wav_file: str, annotation_file: str, silent: bool) -> None:
