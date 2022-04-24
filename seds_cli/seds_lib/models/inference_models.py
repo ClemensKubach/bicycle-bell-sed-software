@@ -140,8 +140,9 @@ class TFTensorRTModel(BaseInferenceModel):
             for _ in range(1):
                 input_shapes = [(self.batch_size, self.window_size)]
                 yield [tf.zeros(shape, tf.float32) for shape in input_shapes]
-
-        converter.convert(calibration_input_fn=shape_calibration_input_fn)
+        # if INT8
+        # converter.convert(calibration_input_fn=shape_calibration_input_fn)
+        converter.convert()
 
         # only needed, if multiple shapes should be supported
         # (Optional) Generate more TRT engines offline (same as the previous
@@ -152,8 +153,7 @@ class TFTensorRTModel(BaseInferenceModel):
         #         yield inp1, inp2
         # converter.build(input_fn=my_input_fn)
 
-        # not needed because convert() already generated one engine for our single shape
-        # converter.build(input_fn=my_input_fn)
+        converter.build(input_fn=shape_calibration_input_fn)
 
         # Save the TRT engine and the engines.
         converter.save(self._converted_model_path)
