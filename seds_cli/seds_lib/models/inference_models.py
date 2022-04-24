@@ -124,7 +124,7 @@ class TFTensorRTModel(BaseInferenceModel):
             allow_build_at_runtime=False,
         )
         converter = tf.experimental.tensorrt.Converter(
-            input_saved_model_dir=self._converted_model_path,
+            input_saved_model_dir=self.saved_model.saved_model_path,
             conversion_params=params,
             use_dynamic_shape=True,
             dynamic_shape_profile_strategy='Optimal',
