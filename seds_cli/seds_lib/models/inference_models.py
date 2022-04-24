@@ -107,6 +107,10 @@ class TFTensorRTModel(BaseInferenceModel):
 
     Not yet supported for Windows!
 
+    Currently, the predictor tries to access the value of class_output if it is
+    defined as output layer. If not, the first model output will be used.
+    Further (multiple) model outputs will be ignored.
+
     References:
         https://www.tensorflow.org/api_docs/python/tf/experimental/tensorrt/Converter
     """
@@ -116,19 +120,22 @@ class TFTensorRTModel(BaseInferenceModel):
         return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tftrt')
 
     def _convert_model(self):
-        params = tf.experimental.tensorrt.ConversionParams(
-            precision_mode='FP16',
-            # Currently, only one engine is supported in mode INT8.
-            maximum_cached_engines=1,
-            use_calibration=True,
-            allow_build_at_runtime=False,
-        )
-        converter = tf.experimental.tensorrt.Converter(
-            input_saved_model_dir=self.saved_model.saved_model_path,
-            conversion_params=params,
-            use_dynamic_shape=True,
-            dynamic_shape_profile_strategy='Optimal',
-        )
+        try:
+            params = tf.experimental.tensorrt.ConversionParams(
+                precision_mode='FP16',
+                # Currently, only one engine is supported in mode INT8.
+                maximum_cached_engines=1,
+                use_calibration=True,
+                allow_build_at_runtime=False,
+            )
+            converter = tf.experimental.tensorrt.Converter(
+                input_saved_model_dir=self.saved_model.saved_model_path,
+                conversion_params=params,
+                use_dynamic_shape=True,
+                dynamic_shape_profile_strategy='Optimal',
+            )
+        except:
+            raise EnvironmentError('')
 
         # Define a generator function that yields input data, and run INT8
         # calibration with the data. All input data should have the same shape.
@@ -164,7 +171,15 @@ class TFTensorRTModel(BaseInferenceModel):
 
     def _predict(self, preprocessed_sample: tf.Tensor) -> float:
         batched_preprocessed_sample = tf.expand_dims(preprocessed_sample, axis=0)
-        batched_result_tensor = self.interpreter(batched_preprocessed_sample)
-        print(batched_result_tensor)
+        batched_result_dict = self.interpreter(batched_preprocessed_sample)
+        # Currently, the predictor tries to access the value of class_output if it is
+        # defined as output layer. If not, the first model output will be used.
+        # Further (multiple) model outputs will be ignored.
+        # TODO better infer output name from model
+        if 'class_output' in batched_result_dict:
+            target_key = 'class_output'
+        else:
+            target_key = next(iter(batched_result_dict))
+        batched_result_tensor = batched_result_dict[target_key]
         result_value = batched_result_tensor[0]
         return result_value
