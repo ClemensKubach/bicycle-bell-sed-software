@@ -6,7 +6,6 @@ import os.path
 from abc import ABC, abstractmethod
 
 import tensorflow as tf
-from tensorflow.python.saved_model import tag_constants
 
 from seds_cli import seds_constants
 from seds_cli.seds_lib.models.saved_models import BaseSavedModel
@@ -69,7 +68,7 @@ class TFLiteInferenceModel(BaseInferenceModel):
         converter = tf.lite.TFLiteConverter.from_saved_model(
             self.saved_model.saved_model_path,
         )
-        converter.experimental_new_converter = True
+        # converter.experimental_new_converter = True
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
                                                tf.lite.OpsSet.SELECT_TF_OPS]
         tflite_model = converter.convert()
@@ -104,6 +103,8 @@ class TFLiteInferenceModel(BaseInferenceModel):
 class TFTensorRTModel(BaseInferenceModel):
     """TF-TensorRT Model
 
+    Tensorflow v2.7.0 and v2.8.0.
+
     Not yet supported for Windows!
 
     References:
@@ -120,13 +121,13 @@ class TFTensorRTModel(BaseInferenceModel):
             # Currently, only one engine is supported in mode INT8.
             maximum_cached_engines=1,
             use_calibration=True,
+            allow_build_at_runtime=False,
         )
         converter = tf.experimental.tensorrt.Converter(
             input_saved_model_dir=self._converted_model_path,
             conversion_params=params,
             use_dynamic_shape=True,
             dynamic_shape_profile_strategy='Optimal',
-            allow_build_at_runtime=False,
         )
 
         # Define a generator function that yields input data, and run INT8
@@ -158,8 +159,7 @@ class TFTensorRTModel(BaseInferenceModel):
         converter.save(self._converted_model_path)
 
     def _prepare_interpreter(self):
-        loaded_converted_model = tf.saved_model.load(self._converted_model_path,
-                                                     tags={tag_constants.SERVING})
+        loaded_converted_model = tf.saved_model.load(self._converted_model_path)
         self.interpreter = loaded_converted_model.signatures['serving_default']
 
     def _predict(self, preprocessed_sample: tf.Tensor) -> float:
