@@ -120,6 +120,9 @@ class TFTensorRTModel(BaseInferenceModel):
         return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tftrt')
 
     def _convert_model(self):
+        self._logger.info('You are trying to use TF-TRT as inference model. This is only '
+                          'supported for UNIX machines with either tensorflow 2.7.0 or 2.8.0'
+                          ' installed.')
         try:
             params = tf.experimental.tensorrt.ConversionParams(
                 precision_mode='FP16',
@@ -134,8 +137,12 @@ class TFTensorRTModel(BaseInferenceModel):
                 use_dynamic_shape=True,
                 dynamic_shape_profile_strategy='Optimal',
             )
-        except:
-            raise EnvironmentError('')
+        except ValueError:
+            self._logger.error('You tried to use TF-TRT as inference model as failed. This is '
+                               'probably because of a version mismatch of tensorflow (has to be '
+                               'either v2.7.0 or v2.8.0) or you are trying to run this on a '
+                               'Windows machine. ')
+            raise
 
         # Define a generator function that yields input data, and run INT8
         # calibration with the data. All input data should have the same shape.
@@ -147,6 +154,7 @@ class TFTensorRTModel(BaseInferenceModel):
             for _ in range(1):
                 input_shapes = [(self.batch_size, self.window_size)]
                 yield [tf.zeros(shape, tf.float32) for shape in input_shapes]
+
         # if INT8
         # converter.convert(calibration_input_fn=shape_calibration_input_fn)
         converter.convert()
@@ -175,7 +183,6 @@ class TFTensorRTModel(BaseInferenceModel):
         # Currently, the predictor tries to access the value of class_output if it is
         # defined as output layer. If not, the first model output will be used.
         # Further (multiple) model outputs will be ignored.
-        # TODO better infer output name from model
         if 'class_output' in batched_result_dict:
             target_key = 'class_output'
         else:
