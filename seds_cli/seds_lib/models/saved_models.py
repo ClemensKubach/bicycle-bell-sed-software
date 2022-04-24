@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 
 import resampy
 import tensorflow as tf
+# import tensorflow_io as tfio
 
 
 class BaseSavedModel(ABC):
@@ -58,6 +59,7 @@ class Mono16kWaveInputSavedModel(BaseSavedModel):
         if not isinstance(sample, tf.Tensor) or tf.rank(sample) != 1:
             raise ValueError('Sample must be a 1D Tensor')
         if int(data_sample_rate) != int(self.sample_rate):
+            # sample = tfio.audio.resample(sample, data_sample_rate, self.sample_rate)
             sample = resampy.resample(sample, data_sample_rate, self.sample_rate)
         return sample
 

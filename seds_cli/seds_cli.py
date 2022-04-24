@@ -149,7 +149,6 @@ class SedsCli:
                 # if saved_model is not specified otherwise
                 if not isinstance(saved_model, str):
                     saved_model = SavedModels[selection.upper()]
-                    print(saved_model)
                 tfmodel_path = os.path.join(seds_constants.RES_MODELS_PATH, selection)
             else:
                 raise ValueError(f'{tfmodel_path} is not a valid predefined model! '
