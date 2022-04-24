@@ -164,6 +164,7 @@ class TFTensorRTModel(BaseInferenceModel):
 
     def _predict(self, preprocessed_sample: tf.Tensor) -> float:
         batched_preprocessed_sample = tf.expand_dims(preprocessed_sample, axis=0)
-        batched_result_tensor = self.interpreter(batched_preprocessed_sample)['predictions']
+        batched_result_tensor = self.interpreter(batched_preprocessed_sample)
+        print(batched_result_tensor)
         result_value = batched_result_tensor[0]
         return result_value
