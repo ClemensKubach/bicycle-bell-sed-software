@@ -70,7 +70,7 @@ class AudioBuffer:
             if currently_buffered == 0:
                 return None
             if currently_buffered > self.audio_config.chunk_size:
-                lost_seconds = (self.audio_config.chunk_size - currently_buffered) * \
+                lost_seconds = (currently_buffered - self.audio_config.chunk_size) * \
                                self.audio_config.frame_length
                 self._logger.warning(f'The buffer was full and {lost_seconds:.3f} seconds were '
                                      f'skipped from {self.audio_config.window_length:.3f} seconds '
