@@ -25,11 +25,12 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
-        'tensorflow>=2.6.2',
-        'resampy>=0.2.2',
-        'numpy',
+        'tensorflow>=2.6.2,<=2.8.0',
         'pyaudio>=0.2.11',
-        'fire>=0.4.0'
+        'fire>=0.4.0',
+        'numpy>=1.19.0',
+        # 'resampy>=0.2.2',
+        'tensorflow_io>=0.21.0,<=0.25.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
