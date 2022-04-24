@@ -26,7 +26,7 @@ setup(
     long_description_content_type="text/markdown",
     install_requires=[
         'tensorflow>=2.6.2',
-        'tensorflow_io>=0.21.0',
+        'resampy>=0.2.2',
         'numpy',
         'pyaudio>=0.2.11',
         'fire>=0.4.0'

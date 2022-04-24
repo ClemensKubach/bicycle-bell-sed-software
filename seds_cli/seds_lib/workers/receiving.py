@@ -11,8 +11,8 @@ from typing import Optional, Union
 from random import randint
 
 import numpy as np
+import resampy as resampy
 import tensorflow as tf
-import tensorflow_io as tfio
 import pyaudio
 
 from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
@@ -206,9 +206,12 @@ class EvaluationAudioReceiver(AudioReceiver):
             self.annotation_file = annotation_file
             self.silent = silent
 
-            self.wav = tf.cast(
-                tf.squeeze(tfio.audio.AudioIOTensor(self.wav_file)[:, 0]), tf.float32
-            ) / 32768.0
+            wav_audio, sr = tf.audio.decode_wav(
+                tf.io.read_file(self.wav_file),
+                desired_channels=1,
+                desired_samples=-1,
+            )
+            self.wav = resampy.resample(tf.squeeze(wav_audio), sr, audio.sample_rate)
             self.annotations = []
             with open(annotation_file, 'r', newline='', encoding='utf-8') as csvfile:
                 csvreader = csv.reader(csvfile)
