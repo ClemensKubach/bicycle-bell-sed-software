@@ -11,7 +11,6 @@ from typing import Optional, Union
 from random import randint
 
 import numpy as np
-import resampy as resampy
 import tensorflow as tf
 import tensorflow_io as tfio
 import pyaudio
