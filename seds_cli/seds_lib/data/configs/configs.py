@@ -18,7 +18,7 @@ class AudioConfig:
             Value in Hz. Typically, 16000.
         window_length: float
             Value in seconds. A larger value means more context information which can be helpful
-            for the recognition by the model. The value has only a small influence on the delay.
+            for the recognition by the model.
             Typically, as long as the sound event takes at a maximum.
         frame_length: float
             Value in seconds, smaller than window_length. Smaller Values can decrease the delay

@@ -75,7 +75,7 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
 
         window_length:
             Value in seconds. A larger value means more context information which can be helpful
-            for the recognition by the model. The value has only a small influence on the delay.
+            for the recognition by the model.
             Typically, as long as the sound event takes at a maximum.
 
         frame_length:
@@ -109,7 +109,7 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
                  input_device: int = None,
                  output_device: int = None,
 
-                 window_length: float = 2.0,
+                 window_length: float = 1.0,
                  frame_length: float = 0.001,
 
                  loglevel: LogLevels = LogLevels.INFO,

@@ -38,7 +38,7 @@ class SedsCli:
         channels:
             Number of channels of the audio input.
             Have to be equal the channel number of the input device.
-            Default at 1 for a mono mic.
+            Default at 2 for a stereo mic.
 
         gpu:
             Boolean whether gpu is to be used for the inference.
@@ -87,7 +87,7 @@ class SedsCli:
 
         window_length:
             Value in seconds. A larger value means more context information which can be helpful
-            for the recognition by the model. The value has only a small influence on the delay.
+            for the recognition by the model.
             Typically, as long as the sound event takes at a maximum.
 
         frame_length:
@@ -119,7 +119,7 @@ class SedsCli:
                  tfmodel_path: str,
 
                  threshold: float = 0.5,
-                 channels: int = 1,
+                 channels: int = 2,
 
                  gpu: bool = False,
                  infer_model: InferenceModels = InferenceModels.TFLITE,
@@ -135,7 +135,7 @@ class SedsCli:
                  output_device: int = None,
 
                  sample_rate: int = 16000,
-                 window_length: float = 2.0,
+                 window_length: float = 1.0,
                  frame_length: float = 0.001,
 
                  callback: Any = None,
