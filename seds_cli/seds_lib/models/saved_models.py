@@ -17,7 +17,7 @@ class BaseSavedModel(ABC):
         label determination from the prediction probability value."""
         self._logger = logging.getLogger(__name__)
         self._logger.info(
-            f'Loading models {self._name} from: {saved_model_path} with threshold: {threshold}'
+            f'Loading {self._name} model from: {saved_model_path} with threshold: {threshold}'
         )
         self.saved_model_path = saved_model_path
         self.threshold = threshold
