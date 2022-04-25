@@ -6,8 +6,6 @@ import threading
 import time
 from typing import Union
 
-import tensorflow as tf
-
 from seds_cli import seds_constants
 from seds_cli.seds_lib.data.configs.configs import SedSoftwareConfig
 from seds_cli.seds_lib.systems import ProductionSedSystem
@@ -29,7 +27,6 @@ class SedSoftware:
 
     def _show_gpu_setting(self, gpu):
         """Procedure for enabling or disabling visibility of the gpu devices for tensorflow."""
-        self._logger.info(f"Num GPUs Available: {len(tf.config.list_physical_devices('GPU'))}")
         env_var = "CUDA_VISIBLE_DEVICES"
         if gpu:
             # os.environ[env_var] = "0"

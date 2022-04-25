@@ -33,6 +33,10 @@ class Predictor(Thread, ABC):
         self.config = config
         self._logger = logging.getLogger(__name__)
 
+        self._logger.info(f"Num GPUs Available: {len(tf.config.list_physical_devices('GPU'))}")
+        for i, gpu_device in enumerate(tf.config.list_physical_devices('GPU')):
+            self._logger.info(f"GPU device {i}: {gpu_device}")
+
         self.receiver = initialized_receiver
 
         if self.receiver is None:
