@@ -15,8 +15,9 @@ from seds_cli.seds_lib.models.saved_models import Mono16kWaveInputSavedModel
 
 class AutoName(Enum):
     """Since Python 3.6"""
+    # pylint:disable=no-self-argument
     def _generate_next_value_(name, start, count, last_values):
-        return name.lower()
+        return str(name).lower()
 
 
 class InferenceModels(Enum):

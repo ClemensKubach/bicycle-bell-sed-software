@@ -91,7 +91,7 @@ class SedSoftware:
             self._logger.error(msg)
             raise UnboundLocalError(msg)
 
-        self._logger.debug("Worker started")
+        self._logger.debug('Worker started')
         self._logger.info('Press Ctrl+C or Interrupt the Kernel')
         self.system.receiver.start()
         self.system.predictor.start()
@@ -100,7 +100,7 @@ class SedSoftware:
             while True:
                 time.sleep(0.5)
         except KeyboardInterrupt:
-            self._logger.warning("Caught KeyboardInterrupt")
+            self._logger.warning('Caught KeyboardInterrupt')
             self.system.receiver.close()
             self.system.predictor.close()
             self._logger.info('Stopped gracefully')

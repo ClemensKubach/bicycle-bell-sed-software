@@ -15,17 +15,32 @@ from seds_cli.seds_lib.selectors.selectors import LogLevels
 
 class JetsonNanoBicycleBellSedsCli(SedsCli):
     """CLI of the Sound Event Detection Software
-    designed for signals of a bicycle bell as target sound, running on a Jetson Nano.
+    designed for signals of a bicycle bell as target sound,
+    running on a Jetson Nano with JetPack 4.6.1.
 
-    Instead of specifying the path to a predefined saved_model in tfmodel_path,
-    it can be accessed directly using !model_name (like !crnn).
-    The value for saved_model will be inferred automatically, if not specified separately.
+    Usage:
+        Instead of specifying the path to a predefined saved_model in tfmodel_path,
+        it can be accessed directly using !model_name (like !crnn).
+        The value for saved_model will be inferred automatically, if not specified separately.
 
-    If running this script, a tensorflow-TensorRT inference model will be chosen for infer_model
-    and the gpu is used.
-    Because the selected model should be one of {CRNN, YAMNET_BASE, YAMNET_EXTENDED} as
-    selected in saved_model, a sample_rate of 16 kHz is predefined.
-    Default channel number is set to 2 for a stereo mic.
+        If running this script, a tensorflow-TensorRT inference model will be chosen for infer_model
+        and the gpu is used.
+        Because the selected model should be one of {CRNN, YAMNET_BASE, YAMNET_EXTENDED} as
+        selected in saved_model, a sample_rate of 16 kHz is predefined.
+        Default channel number is set to 2 for a stereo mic.
+
+    Functionality:
+        There are 2 modes to run the system. The **Production** and the **Evaluation** mode.
+
+        With the **Production** mode, the sounds of the environment are recorded and evaluated with
+        the help of the selected microphone.
+
+        In the **Evaluation** mode, the system can be tested using a selected wave file and
+        an associated CSV file, containing start and end time of the contiguous presence of the
+        target sound event in each line. The output contains an indication of the annotated
+        ground-truth value from the CSV,
+        a prediction value for the played wave data and a prediction value for the recorded audio.
+        If `silent=True`, it is no audio played out loud.
 
     Args:
         tfmodel_path:
@@ -59,12 +74,6 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
             Defines whether the records of the length of storage_length should be stored on disk
             at the program end.
 
-        use_input:
-            Specifies whether an input device is to be used or not.
-
-        use_output:
-            Specifies whether an output device is to be used or not.
-
         input_device:
             Index of the device using for input. None defines the system default device.
             Default is None.
@@ -92,6 +101,9 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
             Defines whether the log output should be stored on disk. Default is False.
     """
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
+    # pylint:disable=duplicate-code
     def __init__(self,
                  tfmodel_path: str,
 
@@ -102,9 +114,6 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
 
                  storage_length: int = 0,
                  save_records: bool = False,
-
-                 use_input: bool = True,
-                 use_output: bool = False,
 
                  input_device: int = None,
                  output_device: int = None,
@@ -134,8 +143,6 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
             saved_model,
             storage_length,
             save_records,
-            use_input,
-            use_output,
             input_device,
             output_device,
             sample_rate,
@@ -148,6 +155,8 @@ class JetsonNanoBicycleBellSedsCli(SedsCli):
 
 
 def main():
+    """Starts optimized SedsCli script designed for default use on jetson nano with JetPack 4.6.1
+    and detection of bicycle bell sound events."""
     fire.Fire(JetsonNanoBicycleBellSedsCli)
 
 

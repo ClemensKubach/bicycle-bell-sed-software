@@ -8,7 +8,6 @@ from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
 from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
 from seds_cli.seds_lib.data.audio.elements import AudioElement
 from seds_cli.seds_lib.data.configs.configs import AudioConfig
-from seds_cli.seds_lib.utils import audio_maths
 
 
 class AudioBuffer:
@@ -50,9 +49,9 @@ class AudioBuffer:
         """clear buffer"""
         self._buffer = []
 
-    def _get_latest_n_slice(self, n: int):
+    def _get_latest_n_slice(self, num: int):
         """get the last n elements of the buffer as list slice"""
-        return self._buffer[-n:]
+        return self._buffer[-num:]
 
     def extract_latest_chunk(self) -> Optional[Union[ProductionAudioChunk,
                                                      EvaluationAudioChunk]]:

@@ -34,8 +34,8 @@ class Predictor(Thread, ABC):
         self._logger = logging.getLogger(__name__)
 
         self._logger.info(f"Num GPUs Available: {len(tf.config.list_physical_devices('GPU'))}")
-        for i, gpu_device in enumerate(tf.config.list_physical_devices('GPU')):
-            self._logger.info(f"GPU device {i}: {gpu_device}")
+        for i, pu_device in enumerate(tf.config.list_physical_devices()):
+            self._logger.info(f"Processing device {i}: {pu_device}")
 
         self.receiver = initialized_receiver
 
@@ -66,7 +66,8 @@ class Predictor(Thread, ABC):
                                Delay(self.receiver.delay, predictor_delay))
 
     @abstractmethod
-    def _predict(self, audio_chunk: AudioChunk, chunk_delay: ChunkDelay) -> Any:
+    def _predict(self, audio_chunk: Union[AudioChunk, ProductionAudioChunk, EvaluationAudioChunk],
+                 chunk_delay: ChunkDelay) -> Any:
         """Defines how the sample tensors from the given AudioChunk are extracted.
         _predict_for_samples is applied on the tensors and
         the resulting PredictorResult is getting wrapped.
@@ -134,6 +135,7 @@ class EvaluationPredictor(Predictor):
     data from the wave file without playing it.
 
     The from the receiver passed ground-truth data is handled as well.
+    The ground-truth value for a certain window is true, if at least one sample is True.
     """
 
     def _default_callback(self, predictor_result: Union[ProductionPredictorResult,
@@ -159,8 +161,11 @@ class EvaluationPredictor(Predictor):
         predictor_result_played = self._predict_for_samples(audio_chunk.played_samples_chunk,
                                                             chunk_delay)
 
-        gt_prob = audio_chunk.labels_chunk
-        gt_label = bool(gt_prob)
+        gt_tensor = audio_chunk.labels_chunk  # tensor of shape (window_size,)
+        gt_prob = tf.reduce_mean(gt_tensor)
+        # ground-truth is defined as truth value
+        # for the presence of at least one sample of a bicycle bell
+        gt_label = bool(tf.reduce_max(gt_tensor))
         gt_delay = Delay(self.receiver.delay, PredictorDelay(chunk_delay, 0))
         predictor_result_gt = PredictorResult(gt_prob, gt_label, gt_delay)
 

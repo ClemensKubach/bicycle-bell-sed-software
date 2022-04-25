@@ -19,12 +19,27 @@ from seds_cli.seds_lib.selectors.selectors import SavedModels
 from seds_cli.seds_lib.software import SedSoftware
 
 
+# pylint:disable=too-many-instance-attributes
 class SedsCli:
     """CLI of the Sound Event Detection Software.
 
-    Instead of specifying the path to a predefined saved_model in tfmodel_path,
-    it can be accessed directly using !model_name (like !crnn).
-    The value for saved_model will be inferred automatically, if not specified separately.
+    Usage:
+        Instead of specifying the path to a predefined saved_model in tfmodel_path,
+        it can be accessed directly using !model_name (like !crnn).
+        The value for saved_model will be inferred automatically, if not specified separately.
+
+    Functionality:
+        There are 2 modes to run the system. The **Production** and the **Evaluation** mode.
+
+        With the **Production** mode, the sounds of the environment are recorded and evaluated with
+        the help of the selected microphone.
+
+        In the **Evaluation** mode, the system can be tested using a selected wave file and
+        an associated CSV file, containing start and end time of the contiguous presence of the
+        target sound event in each line. The output contains an indication of the annotated
+        ground-truth value from the CSV,
+        a prediction value for the played wave data and a prediction value for the recorded audio.
+        If `silent=True`, it is no audio played out loud.
 
     Args:
         tfmodel_path:
@@ -66,12 +81,6 @@ class SedsCli:
         save_records:
             Defines whether the records of the length of storage_length should be stored on disk
             at the program end.
-
-        use_input:
-            Specifies whether an input device is to be used or not.
-
-        use_output:
-            Specifies whether an output device is to be used or not.
 
         input_device:
             Index of the device using for input. None defines the system default device.
@@ -115,6 +124,8 @@ class SedsCli:
             Defines whether the log output should be stored on disk. Default is False.
     """
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
     def __init__(self,
                  tfmodel_path: str,
 
@@ -127,9 +138,6 @@ class SedsCli:
 
                  storage_length: int = 0,
                  save_records: bool = False,
-
-                 use_input: bool = True,
-                 use_output: bool = False,
 
                  input_device: int = None,
                  output_device: int = None,
@@ -167,8 +175,6 @@ class SedsCli:
         self.saved_model = saved_model
         self.storage_length = storage_length
         self.save_records = save_records
-        self.use_input = use_input
-        self.use_output = use_output
         self.input_device = input_device
         self.output_device = output_device
         self.sample_rate = sample_rate
@@ -181,33 +187,69 @@ class SedsCli:
         # mode specific parameters
         self.mode: Optional[SystemModes] = None
         self.silent: bool = False
+        self.use_input: bool = True
+        self.use_output: bool = False
         self.wav_file: Optional[str] = None
         self.annotation_file: Optional[str] = None
 
-    def production(self):
+        print(f'Parameters: {self}')
+
+    def __str__(self):
+        object_dict = self.__dict__
+        return str(object_dict)
+
+    def production(self,
+                   use_output: bool = False,
+                   ):
+        """run system in production mode
+
+        Keyword Args:
+            use_output:
+                Specifies whether an output device is to be used or not.
+                Default is False.
+
+        """
         self.mode = SystemModes.PRODUCTION
+        self.use_output = use_output
         self._execute()
 
     def evaluation(self,
                    wav_file: str,
                    annotation_file: str,
                    silent: bool = False,
+                   use_input: bool = True,
+                   use_output: bool = True,
                    ):
+        """run system in evaluation mode
+
+        Keyword Args:
+            use_input:
+                Specifies whether an input device is to be used or not.
+                Not necessary for evaluation mode if silent is True.
+                Default is True.
+
+            use_output:
+                Specifies whether an output device is to be used or not.
+                Necessary for evaluation mode if silent is False.
+                Default is True.
+        """
+
         if wav_file is None or annotation_file is None:
             raise FileNotFoundError('Paths to wave and corresponding csv file containing '
                                     'annotations have to be given correctly!')
 
         self.mode: SystemModes = SystemModes.EVALUATION
-        self.silent = silent
         self.wav_file = wav_file
         self.annotation_file = annotation_file
+        self.silent = silent
+        self.use_input = use_input
+        self.use_output = use_output
         self._execute()
 
     def _execute(self):
         if self.mode is None:
             raise ValueError('Mode {production|evaluation} have to be chosen. '
                              'See --help for further details.')
-
         audio_config = AudioConfig(
             self.sample_rate,
             self.window_length,
@@ -260,6 +302,7 @@ class SedsCli:
 
 
 def main():
+    """Starts SedsCli script"""
     fire.Fire(SedsCli)
 
 

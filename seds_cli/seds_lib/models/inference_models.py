@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 
 import tensorflow as tf
 
-from seds_cli import seds_constants
 from seds_cli.seds_lib.models.saved_models import BaseSavedModel
 
 
@@ -62,9 +61,21 @@ class TFLiteInferenceModel(BaseInferenceModel):
 
     @property
     def _converted_model_path(self) -> str:
-        return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tflite')
+        return os.path.join(self.saved_model.saved_model_path, 'converted-model.tflite')
+        # return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tflite')
 
     def _convert_model(self):
+        if os.path.exists(self._converted_model_path):
+            self._logger.info('The corresponding saved model was already converted into the '
+                              'desired inference format in a previous execution. '
+                              'If frame and window configuration is not changed, '
+                              'it can be used seamlessly without re-converting.')
+            keep_converted_answer = input('> Use previously converted tflite model? (Y/n)\n')
+            if keep_converted_answer.lower() == 'y':
+                self._logger.info(f'Existing model {self._converted_model_path} will be used.')
+                return
+
+        self._logger.info('Converting model ... (may take a few minutes)')
         converter = tf.lite.TFLiteConverter.from_saved_model(
             self.saved_model.saved_model_path,
         )
@@ -74,6 +85,8 @@ class TFLiteInferenceModel(BaseInferenceModel):
         tflite_model = converter.convert()
         with open(self._converted_model_path, 'wb') as file:
             file.write(tflite_model)
+        self._logger.info('Converted model of inference type Tensorflow Lite was created and '
+                          f'saved in {self._converted_model_path}.')
 
     def _prepare_interpreter(self):
         # Load the TFLite models and allocate tensors.
@@ -100,6 +113,8 @@ class TFLiteInferenceModel(BaseInferenceModel):
         return result_value
 
 
+# pylint:disable=unexpected-keyword-arg
+# pylint:disable=no-member
 class TFTensorRTModel(BaseInferenceModel):
     """TF-TensorRT Model
 
@@ -117,12 +132,25 @@ class TFTensorRTModel(BaseInferenceModel):
 
     @property
     def _converted_model_path(self) -> str:
-        return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tftrt')
+        return os.path.join(self.saved_model.saved_model_path, 'converted-model.tftrt')
+        # return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tftrt')
 
     def _convert_model(self):
         self._logger.info('You are trying to use TF-TRT as inference model. This is only '
                           'supported for UNIX machines with either tensorflow 2.7.0 or 2.8.0'
                           ' installed.')
+
+        if os.path.exists(self._converted_model_path):
+            self._logger.info('The corresponding saved model was already converted into the '
+                              'desired inference format in a previous execution. '
+                              'If frame and window configuration is not changed, '
+                              'it can be used seamlessly without re-converting.')
+            keep_converted_answer = input('> Use previously converted tftrt model? (Y/n)\n')
+            if keep_converted_answer.lower() == 'y':
+                self._logger.info(f'Existing model {self._converted_model_path} will be used.')
+                return
+
+        self._logger.info('Converting model ... (may take a few minutes)')
         try:
             params = tf.experimental.tensorrt.ConversionParams(
                 precision_mode='FP16',
@@ -172,6 +200,8 @@ class TFTensorRTModel(BaseInferenceModel):
 
         # Save the TRT engine and the engines.
         converter.save(self._converted_model_path)
+        self._logger.info('Converted model of inference type Tensorflow TRT was created and '
+                          f'saved in {self._converted_model_path}.')
 
     def _prepare_interpreter(self):
         loaded_converted_model = tf.saved_model.load(self._converted_model_path)

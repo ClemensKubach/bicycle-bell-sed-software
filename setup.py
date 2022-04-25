@@ -1,5 +1,8 @@
-from setuptools import setup
+"""Setup script for bicycle-bell-seds-cli"""
+
 import os
+from setuptools import setup
+
 
 readme_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')
 with open(readme_path, "r", encoding="utf-8") as fh:

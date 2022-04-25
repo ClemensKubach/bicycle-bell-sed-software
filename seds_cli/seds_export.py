@@ -9,6 +9,7 @@ from seds_cli.seds_lib.utils import audio_maths
 from seds_cli.seds_lib.utils import file_utils
 
 
+# pylint:disable=too-many-locals
 def main(path_storage_pickle: str, target_wav_path: str, sample_rate: int = 16000):
     """ export elements of a saved audio storage file to a concatenated wave file """
     _logger = logging.getLogger(__name__)

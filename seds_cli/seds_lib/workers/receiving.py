@@ -6,8 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from threading import Thread
 import logging
-import re
-from typing import Optional, Union
+from typing import Optional, Union, Any, Tuple
 from random import randint
 
 import numpy as np
@@ -17,12 +16,15 @@ import pyaudio
 
 from seds_cli.seds_lib.data.audio.chunks import ProductionAudioChunk
 from seds_cli.seds_lib.data.audio.chunks import EvaluationAudioChunk
-from seds_cli.seds_lib.data.audio.elements import AudioElement
+from seds_cli.seds_lib.data.audio.elements import AudioElement, ProductionAudioElement
 from seds_cli.seds_lib.data.audio.elements import EvaluationAudioElement
 from seds_cli.seds_lib.data.configs.configs import ReceiverConfig
 from seds_cli.seds_lib.data.time.delay import ReceiverDelay
 from seds_cli.seds_lib.storage.audio.persistent import AudioStorage
 from seds_cli.seds_lib.storage.audio.temporary import AudioBuffer
+
+# pylint: disable=too-many-instance-attributes
+from seds_cli.seds_lib.utils import audio_maths
 
 
 class AudioReceiver(Thread, ABC):
@@ -111,6 +113,7 @@ class AudioReceiver(Thread, ABC):
                 self._measure_time = True
             time.sleep(randint(1, 5))
 
+    # pylint: disable=unused-argument
     def _stream_callback(self, in_data, frame_count, time_info, status):
         """Defines the pyAudio callback function.
         This is called each time, a new frame of size frame_length (frame_size) is received.
@@ -124,8 +127,9 @@ class AudioReceiver(Thread, ABC):
         with self._lock:
             if self._measure_time:
                 start_time = time.perf_counter()
-        audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
-        element = AudioElement(tf.constant(audio_as_np_float32))
+
+        element, output_data, next_status = self._create_audio_element(in_data)
+
         self.buffer.add_element(element)
         self.storage.add_element(element)
         with self._lock:
@@ -133,7 +137,15 @@ class AudioReceiver(Thread, ABC):
                 end_time = time.perf_counter()
                 self._stream_callback_time = end_time - start_time
                 self._measure_time = False
-        return in_data, pyaudio.paContinue
+        return output_data, next_status
+
+    @abstractmethod
+    def _create_audio_element(self, in_data: Any) -> Tuple[Optional[AudioElement], Any, int]:
+        """de-serialize input data and create AudioElement."""
+        audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
+        element = AudioElement(tf.constant(audio_as_np_float32))
+        next_status = pyaudio.paContinue
+        return element, in_data, next_status
 
     def receive_latest_chunk(self) -> Optional[Union[ProductionAudioChunk,
                                                      EvaluationAudioChunk]]:
@@ -180,12 +192,22 @@ class ProductionAudioReceiver(AudioReceiver):
     def _init_buffer(self) -> AudioBuffer:
         return AudioBuffer(ProductionAudioChunk, self.config.audio_config)
 
+    def _create_audio_element(self, in_data: Any) -> Tuple[Optional[AudioElement], Any, int]:
+        """de-serialize input data and create AudioElement."""
+        audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
+        element = ProductionAudioElement(tf.constant(audio_as_np_float32))
+        next_status = pyaudio.paContinue
+        return element, in_data, next_status
+
 
 class EvaluationAudioReceiver(AudioReceiver):
     """Evaluation mode AudioReceiver as Thread.
     Expects a ReceiverConfig instance.
 
     Loads the wav_file and the corresponding annotation_file.
+    If `silent=True`, the value for received is equal to played. To still have the opportunity
+    to use an output device for playing the audio,
+    the evaluation process will continue to play and compute in real time.
 
     It initializes an AudioStorage and AudioBuffer instance. Then PortAudio via PyAudio is used
     for opening a stream such that callbacks for each frame can be called asynchronous.
@@ -197,6 +219,7 @@ class EvaluationAudioReceiver(AudioReceiver):
     def _init_buffer(self) -> AudioBuffer:
         return AudioBuffer(EvaluationAudioChunk, self.config.audio_config)
 
+    # pylint: disable=too-many-locals
     def __init__(self, config: ReceiverConfig,
                  wav_file: str, annotation_file: str, silent: bool) -> None:
         super().__init__(config)
@@ -206,36 +229,40 @@ class EvaluationAudioReceiver(AudioReceiver):
             self.annotation_file = annotation_file
             self.silent = silent
 
-            wav_audio, sr = tf.audio.decode_wav(
+            self._logger.info('Reading wave and csv file... (may take a few seconds)')
+            wav_audio, in_sample_rate = tf.audio.decode_wav(
                 tf.io.read_file(self.wav_file),
                 desired_channels=1,
                 desired_samples=-1,
             )
-            if int(sr) != int(self.sample_rate):
-                self.wav = tfio.audio.resample(tf.squeeze(wav_audio), sr, audio.sample_rate)
+            self.wav = tf.squeeze(wav_audio)
+            if int(in_sample_rate) != int(audio.sample_rate):
+                self.wav = tfio.audio.resample(
+                    self.wav,
+                    in_sample_rate,
+                    audio.sample_rate
+                )
                 # if tf bug about necessary (unused) tensorflow_io import is resolved, use resampy:
                 # self.wav = resampy.resample(tf.squeeze(wav_audio), sr, audio.sample_rate)
             self.annotations = []
             with open(annotation_file, 'r', newline='', encoding='utf-8') as csvfile:
                 csvreader = csv.reader(csvfile)
-                filename_wav = re.split(r'[/\\]', self.wav_file.split('.wav')[0])[-1]
                 for row in csvreader:
-                    if row[0] == filename_wav:
-                        self.annotations = [
-                            [float(s) for s in time_pair.split('#')]
-                            for time_pair in row[1:]]
-                        # tuple of start_time & end_time in sec for each pairs for each file
-                        break
+                    # row = (start_time, end_time, file_name, annotation_bool)
+                    if bool(row[3] == 'True'):
+                        self.annotations.append((float(row[0]), float(row[1])))
             sample_timings = []
-            for seconds_timing_pair in self.annotations:
-                start = int(seconds_timing_pair[0] * audio.sample_rate)  # start time
-                end = int(seconds_timing_pair[1] * audio.sample_rate)  # end time
-                sample_timings.append((start, end))
+            for start_time_sec, end_time_sec in self.annotations:
+                start_sample = audio_maths.seconds_to_samples(start_time_sec, audio.sample_rate)
+                end_sample = audio_maths.seconds_to_samples(end_time_sec, audio.sample_rate)
+                sample_timings.append((start_sample, end_sample))
             self.sample_timings = np.zeros(shape=self.wav.shape)
             for start, end in sample_timings:
                 for i in range(start, end):
-                    self.sample_timings[i] = True
-
+                    # set the truth value for the sample timing to True
+                    # because of frame_size, some (<frame_size) last samples can get lost
+                    if i < len(self.sample_timings):
+                        self.sample_timings[i] = True
             self.current_start_sample = 0
         except OSError:
             self._logger.error(f"File not found: {self.wav_file}")
@@ -244,32 +271,30 @@ class EvaluationAudioReceiver(AudioReceiver):
             self._logger.error("An unknown error occurred")
             raise
 
-    def _stream_callback(self, in_data, frame_count, time_info, status):
-        self._logger.debug(
-            f"Audio data with {frame_count} samples for {time_info} and status {status} received")
-        start_sample = self.current_start_sample
-        end_sample = start_sample + self.config.audio_config.frame_size
+    def _create_audio_element(self, in_data: Any) -> Tuple[Optional[AudioElement], Any, int]:
+        """de-serialize input data and create AudioElement."""
         try:
+            start_sample = self.current_start_sample
+            end_sample = start_sample + self.config.audio_config.frame_size
             played_samples = self.wav[start_sample:end_sample]
             if self.silent:
                 received_samples = played_samples
             else:
-                received_samples = np.fromstring(in_data, dtype=np.float32)[0::self.config.channels]
+                audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
+                received_samples = audio_as_np_float32
             labels = self.sample_timings[start_sample:end_sample]
-            self._logger.debug(
-                f"received Samples Shape {received_samples.shape} {labels.shape}"
-            )
             element = EvaluationAudioElement(
                 tf.constant(received_samples),
                 tf.constant(played_samples),
                 tf.constant(labels)
             )
-            self.buffer.add_element(element)
             self.current_start_sample += self.config.audio_config.frame_size
-            return played_samples, pyaudio.paContinue
+            next_status = pyaudio.paContinue
+            return element, played_samples, next_status
         except IndexError:
-            self._logger.debug("End of evaluation wave file reached")
-            return [], pyaudio.paComplete
+            self._logger.info("End of evaluation wave file reached")
+            next_status = pyaudio.paComplete
+            return None, [], next_status
         except Exception:
             self._logger.error("An unknown error occurred")
             raise

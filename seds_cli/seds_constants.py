@@ -1,7 +1,6 @@
 """Module for constants."""
 
 import os
-import logging
 
 RES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'res')
 RES_LOGS_PATH = os.path.join(RES_PATH, 'logs')
@@ -11,6 +10,7 @@ RES_TESTFILES_PATH = os.path.join(RES_PATH, 'test-files')
 
 
 def print_res_location():
+    """Print base dir of resource folders"""
     print(f'Resource files are located at: {RES_PATH}')
 
 

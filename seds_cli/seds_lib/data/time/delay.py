@@ -73,7 +73,8 @@ class PredictorDelay:
         delay object concerning the chunk
 
     inference_time (float)
-        in seconds, time needed for running an inference_time step on the model, including preprocessing
+        in seconds, time needed for running an inference_time step on the model,
+        including preprocessing
     """
     chunk_delay: ChunkDelay
     inference_time: float

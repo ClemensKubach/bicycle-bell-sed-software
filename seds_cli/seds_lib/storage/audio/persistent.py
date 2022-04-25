@@ -30,9 +30,16 @@ class AudioStorage:
         self._logger = logging.getLogger(__name__)
         self._storage = []
         self.keep_all = bool(self.storage_size < 0)
+        if self.keep_all:
+            self._logger.info('AudioStorage was initialized for storing '
+                              'all received audio samples.')
+        else:
+            self._logger.info('AudioStorage was initialized for always storing the last '
+                              f'{storage_length} seconds of received audio samples.')
 
     @property
     def current_size(self):
+        """Number of elements saved in the storage instance."""
         return len(self._storage)
 
     def add_element(self, element: Union[AudioElement,
