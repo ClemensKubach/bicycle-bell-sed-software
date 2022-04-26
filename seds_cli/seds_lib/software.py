@@ -30,6 +30,11 @@ class SedSoftware:
         env_var = "CUDA_VISIBLE_DEVICES"
         if gpu:
             # os.environ[env_var] = "0"
+            os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc'
+            os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'cpp'
+            self._logger.info('Environment variable TF_GPU_ALLOCATOR is set to cuda_malloc')
+            self._logger.info('Environment variable PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION is set '
+                              'to cpp')
             self._logger.info(f'Environment variable {env_var} is set to all')
         else:
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

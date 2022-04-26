@@ -62,7 +62,6 @@ class TFLiteInferenceModel(BaseInferenceModel):
     @property
     def _converted_model_path(self) -> str:
         return os.path.join(self.saved_model.saved_model_path, 'converted-model.tflite')
-        # return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tflite')
 
     def _convert_model(self):
         if os.path.exists(self._converted_model_path):
@@ -116,7 +115,7 @@ class TFLiteInferenceModel(BaseInferenceModel):
 # pylint:disable=unexpected-keyword-arg
 # pylint:disable=no-member
 class TFTensorRTModel(BaseInferenceModel):
-    """TF-TensorRT Model
+    """TF-TensorRT Model (memory sizes for Jetson Nano (4GB) selected)
 
     Tensorflow v2.7.0 and v2.8.0.
 
@@ -130,10 +129,19 @@ class TFTensorRTModel(BaseInferenceModel):
         https://www.tensorflow.org/api_docs/python/tf/experimental/tensorrt/Converter
     """
 
+    def __init__(self, saved_model: BaseSavedModel, window_size):
+        super().__init__(saved_model, window_size)
+        gpu_devices = tf.config.list_physical_devices('GPU')
+        if len(gpu_devices) > 0:
+            tf.config.experimental.set_memory_growth(gpu_devices[0], True)
+            tf.config.experimental.set_virtual_device_configuration(
+                gpu_devices[0],
+                [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)]
+            )
+
     @property
     def _converted_model_path(self) -> str:
         return os.path.join(self.saved_model.saved_model_path, 'converted-model.tftrt')
-        # return os.path.join(seds_constants.RES_MODELS_PATH, 'converted-model.tftrt')
 
     def _convert_model(self):
         self._logger.info('You are trying to use TF-TRT as inference model. This is only '
@@ -158,6 +166,7 @@ class TFTensorRTModel(BaseInferenceModel):
                 maximum_cached_engines=1,
                 use_calibration=True,
                 allow_build_at_runtime=True,
+                max_workspace_size_bytes=(1 << 30),
             )
             converter = tf.experimental.tensorrt.Converter(
                 input_saved_model_dir=self.saved_model.saved_model_path,
