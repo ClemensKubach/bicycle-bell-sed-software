@@ -185,7 +185,9 @@ class TFTensorRTModel(BaseInferenceModel):
 
         # if INT8
         # converter.convert(calibration_input_fn=shape_calibration_input_fn)
+        self._logger.debug('TF-TRT - Start conversion')
         converter.convert()
+        self._logger.debug('TF-TRT - Conversion finished')
 
         # only needed, if multiple shapes should be supported
         # (Optional) Generate more TRT engines offline (same as the previous
@@ -196,10 +198,14 @@ class TFTensorRTModel(BaseInferenceModel):
         #         yield inp1, inp2
         # converter.build(input_fn=my_input_fn)
 
+        self._logger.debug('TF-TRT - Start building')
         converter.build(input_fn=shape_calibration_input_fn)
+        self._logger.debug('TF-TRT - Building finished')
 
         # Save the TRT engine and the engines.
+        self._logger.debug('TF-TRT - Save engines')
         converter.save(self._converted_model_path)
+        self._logger.debug('TF-TRT - Engines saved')
         self._logger.info('Converted model of inference type Tensorflow TRT was created and '
                           f'saved in {self._converted_model_path}.')
 
