@@ -157,7 +157,7 @@ class TFTensorRTModel(BaseInferenceModel):
                 # Currently, only one engine is supported in mode INT8.
                 maximum_cached_engines=1,
                 use_calibration=True,
-                allow_build_at_runtime=False,
+                allow_build_at_runtime=True,
             )
             converter = tf.experimental.tensorrt.Converter(
                 input_saved_model_dir=self.saved_model.saved_model_path,
