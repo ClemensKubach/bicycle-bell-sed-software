@@ -210,8 +210,12 @@ class TFTensorRTModel(BaseInferenceModel):
                           f'saved in {self._converted_model_path}.')
 
     def _prepare_interpreter(self):
+        self._logger.debug('TF-TRT - Load TRT model')
         loaded_converted_model = tf.saved_model.load(self._converted_model_path)
+        self._logger.debug('TF-TRT - TRT model loaded')
+        self._logger.debug('TF-TRT - Load model graph_func')
         self.interpreter = loaded_converted_model.signatures['serving_default']
+        self._logger.debug('TF-TRT - model graph_func loaded')
 
     def _predict(self, preprocessed_sample: tf.Tensor) -> float:
         batched_preprocessed_sample = tf.expand_dims(preprocessed_sample, axis=0)
