@@ -99,7 +99,7 @@ class PredictorConfig:
     Attributes
         audio_config (AudioConfig)
             Audio config object.
-        tfmodel_path (str)
+        tfmodel (str)
             Path to the tensorflow SavedModel.
         model_selection (ModelSelection)
             Choose a mixture of model building for inference.

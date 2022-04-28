@@ -89,16 +89,21 @@ class Predictor(Thread, ABC):
 
     def run(self):
         """Defines what the predictor thread has to do while running."""
-        while not self._stop_event.is_set():
-            start_time = time.perf_counter()
-            latest_chunk = self.receiver.receive_latest_chunk()
-            end_time = time.perf_counter()
-            if latest_chunk is not None:
-                processing_time = end_time - start_time
-                max_frame_delay = latest_chunk.num_unseen * self.config.audio_config.frame_length
-                chunk_delay = ChunkDelay(processing_time, max_frame_delay)
-                predictor_result = self._predict(latest_chunk, chunk_delay)
-                self._run_callback(predictor_result)
+        try:
+            while not self._stop_event.is_set():
+                start_time = time.perf_counter()
+                latest_chunk = self.receiver.receive_latest_chunk()
+                end_time = time.perf_counter()
+                if latest_chunk is not None:
+                    processing_time = end_time - start_time
+                    max_frame_delay = latest_chunk.num_unseen * \
+                                      self.config.audio_config.frame_length
+                    chunk_delay = ChunkDelay(processing_time, max_frame_delay)
+                    predictor_result = self._predict(latest_chunk, chunk_delay)
+                    self._run_callback(predictor_result)
+        except AttributeError:
+            self._logger.warning('Predictor terminated unexpectedly! Probably because the end '
+                                 'of the stream is reached if evaluation mode is selected.')
 
     def close(self):
         """Stops the predictor"""

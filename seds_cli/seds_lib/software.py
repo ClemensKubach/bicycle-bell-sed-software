@@ -116,3 +116,4 @@ class SedSoftware:
                         self.system.receiver.storage,
                         seds_constants.RES_RECORDS_PATH
                     )
+                    self._logger.info(f'File saved in: {seds_constants.RES_RECORDS_PATH}')

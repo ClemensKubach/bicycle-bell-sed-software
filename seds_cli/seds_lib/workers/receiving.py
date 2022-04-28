@@ -283,6 +283,8 @@ class EvaluationAudioReceiver(AudioReceiver):
                 audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
                 received_samples = audio_as_np_float32
             labels = self.sample_timings[start_sample:end_sample]
+            if end_sample >= self.wav.shape[0]:
+                raise IndexError
             element = EvaluationAudioElement(
                 tf.constant(received_samples),
                 tf.constant(played_samples),
@@ -294,7 +296,8 @@ class EvaluationAudioReceiver(AudioReceiver):
         except IndexError:
             self._logger.info("End of evaluation wave file reached")
             next_status = pyaudio.paComplete
-            return None, [], next_status
+            self._logger.info('Press Ctrl+C to terminate!')
+            return None, b'', next_status
         except Exception:
             self._logger.error("An unknown error occurred")
             raise

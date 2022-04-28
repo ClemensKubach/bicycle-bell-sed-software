@@ -44,10 +44,8 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'seds-bb-desktop=bicycle_bell_seds.run_desktop_bicycle_bell_seds:main',
-            'seds-bb-jn=bicycle_bell_seds.run_jn_bicycle_bell_seds:main',
             'seds-cli=seds_cli.seds_cli:main',
-            'seds-res-dir=seds_cli.seds_constants:print_res_location'
+            'jn-seds-cli=bicycle_bell_seds.jn_seds_cli:main'
         ],
     },
 
