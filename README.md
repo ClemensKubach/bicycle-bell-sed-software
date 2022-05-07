@@ -31,7 +31,7 @@ pip install --upgrade pip
 pip install bicycle-bell-seds-cli
 
 seds-cli --help
-seds-cli run --tfmodel=\!crnn production
+seds-cli run --tfmodel='!crnn' production
 ```
 
 There are generally 4 main functionalities that are displayed with `seds-cli --help`.
@@ -69,7 +69,7 @@ jn-seds-cli devices soundcheck
 Start a sound event detection with saving the logs to a file in the resources' folder and 
 record the first minute of the received audio input stream:
 ```shell
-jn-seds-cli run --tfmodel=\!crnn production --save_log=True --save_records=True --storage_length=60
+jn-seds-cli run --tfmodel='!crnn' production --save_log=True --save_records=True --storage_length=60
 ```
 Convert the recorded file of the previous run into a wave file:
 ```shell
@@ -87,30 +87,41 @@ Most parameters for the run command are available for both modes.
 Mode specific parameters can be found via `--help` for the selected mode. 
 The following flags are used for the production mode, but are available for the evaluation mode too.
 
-Select a predefined model via `--tfmodel=!model-name`, here CRNN via `!crnn`, and run the production 
-mode without displaying the probability value of the predictions. The logs will be saved to a file:
+**There are three models pre-defined and pre-trained for direct usage for 
+detecting bicycle bell sounds. They can be chosen by using `--tfmodel="!model-name"` without any 
+further specifications of `saved_model` type or the absolute path to the saved model resource 
+in `tfmodel`. Available are `!crnn`, `yamnet_base` and `yamnet_extended`.**
+
+
+Select the predefined CRNN model via `!crnn`, and run the production mode without displaying 
+the probability value of the predictions. The logs will be saved to a file:
 ```shell
-jn-seds-cli run --tfmodel=\!crnn production --save_log=True --prob_logging=False
+jn-seds-cli run --tfmodel='!crnn' production --save_log=True --prob_logging=False
 ```
+Via specifying an integer for `input_device`, not `None`, a specific (not default) sound device 
+can be selected. 
 Use the extended YAMNet model in a production run and define that the selected (default) 
-input device only has 1 input channel. Via specifying an integer for `input_device`, not `None`, 
-a specific (not default) sound device can be selected:
+input device only has one input channel:
 ```shell
-jn-seds-cli run --tfmodel=\!yamnet_extened production --channels=1
+jn-seds-cli run --tfmodel='!yamnet_extended' production --channels=1
 ```
 Use the base YAMNet model in a production run with a lower threshold as default and activate the
 logging of the probabilities to see that every prediction from a value of 0.3 will True:
 ```shell
-jn-seds-cli run --tfmodel=\!yamnet_base production --threshold=0.3 --prob_logging=True
+jn-seds-cli run --tfmodel='!yamnet_base' production --threshold=0.3 --prob_logging=True
 ```
 
-Mode specific flag-usage examples:
-```shell
-jn-seds-cli run --tfmodel=\!crnn evaluation --save_log=True --wav_file="/path/to/wave.wav" --annotation_file="/path/to/annotations.csv" --silent=False
-```
+Mode specific flag-usage examples...
 
+For the evaluation mode, use the first option for a random test example or specify an own test:
 ```shell
-jn-seds-cli run --tfmodel=\!crnn production --save_log=True --use_output=True
+jn-seds-cli run --tfmodel='!crnn' evaluation --save_log=True --silent=False
+# Or
+jn-seds-cli run --tfmodel='!crnn' evaluation --save_log=True --wav_file="/path/to/wave.wav" --annotation_file="/path/to/annotations.csv" --silent=False
+```
+For playback:
+```shell
+jn-seds-cli run --tfmodel='!crnn' production --save_log=True --use_output=True
 ```
 
 ## Advanced Usage
@@ -163,8 +174,14 @@ python -c "from tensorflow.python.client import device_lib; device_lib.list_loca
 pip install bicycle-bell-seds-cli
 
 jn-seds-cli --help
-jn-seds-cli run --tfmodel=\!crnn production
+jn-seds-cli run --tfmodel='!crnn' production
 ```
+It is expected that after `tensorflow_io` installation no gpu will be detected. 
+This is because this build of `tensorflow_io` brings a specific build of `tensorflow` (2.6) that does not 
+support gpus'. 
+With JetPack 5.0 and thus higher Python version (>3.6), more recent versions of `tensorflow_io` can 
+be installed directly, for which there are also pre-build wheels for aarch64.
+
 Most of the installation steps for TensorFlow on the Jetson Nano are from 
 "Prerequisites and Dependencies" [in corresponding the Nvidia Docs](https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html).
 
