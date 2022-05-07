@@ -21,7 +21,7 @@ The other related repositories are:
 The software is based on the [PortAudio](http://www.portaudio.com/) library for audio I/O. 
 Therefore, this must be installed on the system.
 For more detailed installation instructions on an embedded device like the 
-[Jetson Nano](#Jetson Nano Setup), see the corresponding chapter.
+[Jetson Nano](#Jetson-Nano-Setup), see the corresponding chapter.
 
 ```shell
 apt-get update
