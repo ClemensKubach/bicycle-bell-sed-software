@@ -10,7 +10,7 @@ with open(readme_path, "r", encoding="utf-8") as fh:
 
 setup(
     name='bicycle-bell-seds-cli',
-    version='0.0.2',
+    version='0.0.3',
     packages=['seds_cli', 'seds_cli.seds_lib', 'seds_cli.seds_lib.data',
               'seds_cli.seds_lib.data.time', 'seds_cli.seds_lib.data.audio',
               'seds_cli.seds_lib.data.configs', 'seds_cli.seds_lib.data.predictions',
