@@ -3,14 +3,13 @@
 import os
 from setuptools import setup
 
-
 readme_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'README.md')
 with open(readme_path, "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name='bicycle-bell-seds-cli',
-    version='0.0.3',
+    version='0.0.4',
     packages=['seds_cli', 'seds_cli.seds_lib', 'seds_cli.seds_lib.data',
               'seds_cli.seds_lib.data.time', 'seds_cli.seds_lib.data.audio',
               'seds_cli.seds_lib.data.configs', 'seds_cli.seds_lib.data.predictions',
@@ -44,7 +43,13 @@ setup(
     setup_requires=['setuptools_scm'],
     include_package_data=True,
     exclude_package_data={
-        '': ['README.md', 'visualizations'],
+        '': ['README.md',
+             'visualizations',
+             'converted-model.tflite',
+             'converted-model.tftrt',
+             '*.log',
+             '*.pickle',
+             ],
     },
     entry_points={
         'console_scripts': [
