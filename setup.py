@@ -33,7 +33,7 @@ setup(
         'fire>=0.4.0',
         'numpy>=1.19.0',
         # 'resampy>=0.2.2',
-        'tensorflow_io>=0.21.0,<=0.25.0',
+        'tensorflow_io>=0.21.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
@@ -42,11 +42,13 @@ setup(
     },
     setup_requires=['setuptools_scm'],
     include_package_data=True,
+    exclude_package_data={
+        '': ['README.md', 'visualizations'],
+    },
     entry_points={
         'console_scripts': [
             'seds-cli=seds_cli.seds_cli:main',
             'jn-seds-cli=bicycle_bell_seds.jn_seds_cli:main'
         ],
     },
-
 )
