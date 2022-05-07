@@ -10,7 +10,7 @@ with open(readme_path, "r", encoding="utf-8") as fh:
 
 setup(
     name='bicycle-bell-seds-cli',
-    version='0.0.1',
+    version='0.0.2',
     packages=['seds_cli', 'seds_cli.seds_lib', 'seds_cli.seds_lib.data',
               'seds_cli.seds_lib.data.time', 'seds_cli.seds_lib.data.audio',
               'seds_cli.seds_lib.data.configs', 'seds_cli.seds_lib.data.predictions',
@@ -24,7 +24,8 @@ setup(
     license='MIT License',
     author='Clemens Kubach',
     author_email='clemens.kubach@gmail.com',
-    description='CLI software for single target sound event detection of bicycle bell signals.',
+    description='CLI software for the detection of the single target sound event of bicycle bell '
+                'signals.',
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
