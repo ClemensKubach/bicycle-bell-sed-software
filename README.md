@@ -1,111 +1,191 @@
-# Bicycle Bell SED Software
-
-(README deprecated, will be updated soon)
-
+# Bicycle Bell Sound Event Detection System
 **Author: Clemens Kubach**
 
-This repository includes the software for embedding the neural network model in an executable system and deploy it on a device.
-It is a part of the results of my bachelor thesis [], as well as the git repository [https://github.com/ClemensKubach/thesis-embedded-sed.git] for the development of the neural network model.
+This repository is one of three for my bachelor thesis on "Development of an Embedded System 
+for Detecting Acoustic Alert Signals of Cyclists Using Neural Networks".
 
+It contains the software as an easy-to-use and customizable CLI for the project. 
+Only this part has to be installed on the target device and can be used and 
+developed independently of the other components.
+
+A trained saved model can be selected, which is then converted to an inference format 
+(TFLite or TF-TRT), allowing real-time predictions to be made to a single sound event for 
+live-streamed audio via connected sound devices. 
+
+The other related repositories are:
+- [bicycle-bell-sed-models](https://github.com/ClemensKubach/bicycle-bell-sed-models)
+- [bicycle-bell-sed-pipeline](https://github.com/ClemensKubach/bicycle-bell-sed-pipeline)
 
 
 ## Getting Started
-- clone git repo `https://github.com/ClemensKubach/thesis-embedded-sed-deployment.git`
-- Change current directory `cd thesis-embedded-sed-deployment`
-- install python3 and pip (dev in Python 3.9.7)
-  - for jetson nano with JetPack 4.6:
-    - `sudo apt update`
-    - `sudo apt install python3-pip`
-    - `sudo apt-get install portaudio19-dev python-pyaudio` for pyaudio
-- install dependencies with: `pip3 install -r requirements.txt`
-  - if `echo $JP_VERSION` is unset, specify it with your JetPack version: here `export JP_VERSION=461`
-  - `sudo pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v$JP_VERSION tensorflow` for [latest TF on Jetson Nano](https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html)
-- run software: `python3 embedded-sed-system.py "./model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05/"`
+The software is based on the [PortAudio](http://www.portaudio.com/) library for audio I/O. 
+Therefore, this must be installed on the system.
+For more detailed installation instructions on an embedded device like the 
+[Jetson Nano](#Jetson Nano Setup), see the corresponding chapter.
 
+```shell
+apt-get update
+apt-get install portaudio19-dev
 
-## Configurations
+pip install --upgrade pip
+pip install bicycle-bell-seds-cli
 
-### Download Tensorflow Model from Google Cloud Storage
-In the following example, the model `model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05` will be downloaded from Google Cloud Storage.
-1. `gcloud auth login`
-2. `gsutil -m cp -r "gs://thesis-bicycle-bell-sed-bucket-eu/models/*" ./model/`
+seds-cli --help
+seds-cli run --tfmodel=\!crnn production
+```
 
-### Download System Test Files from Google Cloud Storage
-1. `gcloud auth login`
-2. `gsutil -m cp -r "gs://clemens-thesis-dataset-bucket/FSD50K/finalSystemTest" ./systemtest/`
+There are generally 4 main functionalities that are displayed with `seds-cli --help`.
+- `conversion` can convert recordings of a pre-executed run command with appropriate 
+parameterization for sound recording to a wave file.
+- `devices` can be used for testing the available devices by doing a sound check.
+- `resources` can be used for find the location of resource files like log-files or recordings.
+- `run` is the main functionality of the software. 
+This command is used to start a sound event detection.
 
-### Configurate embedded-sed-system Script Parameter
-Generic example with basic settings: 
+## General Information
+Generally, two versions of the CLI are installed: `jn-seds-cli` and `seds-cli`. 
+The first one is based on the second one and only contains simplifications and specifications for 
+the execution of the bicycle bell detection on the Jetson Nano. 
+With the right choice of parameters, however, 
+both CLIs can be used on all devices without any problems. 
+Details about the differences can be found via `jn-seds-cli run --help`. In the following, the 
+`jn-seds-cli` version will be used for an easier copy-and-paste usage on the Jetson Nano as 
+target device.
 
-```python embedded-sed-system.py "./model/modelName" --mode="production" --silent=False --bufferMaxSize=-1 --inputDevice_index=None --outputDevice_index=None --wavFilepath=None --annotationFilepath=None --input=True --output=False --channels=1 --sample_rate=22050 --frame_size=0.046 --hop_size=0.023 --chunk_size=42 --n_mels=128 --gpu=False --loglevel="info" --logProb=False```
+Please use `--help` for detailed explanations of the individual software 
+functionalities and parameters. 
+With this you can get help for each level, i.e.: 
+`jn-seds-cli --help`, `jn-seds-cli run --help`, `jn-seds-cli run evaluation --help`.
 
-#### Production Mode
-Minimal example with using the basic config: 
+## Usage Examples
+```shell
+jn-seds-cli resources where
+```
 
-```python embedded-sed-system.py "./model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05/"```
+```shell
+jn-seds-cli devices soundcheck
+```
 
-Example for using GPU and restricting the buffer size to holding samples of over an hour:
+```shell
+jn-seds-cli run --tfmodel=\!crnn production --save_log=True --save_records=True --storage_length=60
+```
 
-```python embedded-sed-system.py "./model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05/" --gpu=True --bufferMaxSize=100000```
+```shell
+jn-seds-cli conversion record_to_wav --path_storage_pickle="/abs/path/to/seds_cli/res/records/record-xx.pickle" --target_wav_path="./target_filepath/filename.wav"
+```
 
-Example for debugging and advanced logging without saving records:
+### Run Command
+There are two different modes with the run command: production and evaluation. 
+The production mode is the main mode and receives live the current sound of the environment 
+through the selected microphone device. 
+The evaluation mode can play a recorded wave file with a corresponding annotation csv file and 
+displays the ground-truth value as well as the prediction for the live microphone recordings.
 
-```python embedded-sed-system.py "./model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05/" --loglevel="debug" --logProb=True --saveRecords=False```
+Most parameters for the run command are available for both modes. 
+Mode specific parameters can be found via `--help` for the selected mode. 
+The following flags are used for the production mode, but are available for the evaluation mode too.
 
-#### Evaluation Mode
-Example for evaluating the evaluation wave file with the live sound environment noises and microphone influences.
+```shell
+jn-seds-cli run --tfmodel=\!crnn production --save_log=True --prob_logging=False
+```
 
-```python embedded-sed-system.py "./model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05/" --mode='evaluation' --output=True --silent=False --wavFilepath='systemtest\finalSystemTest\systemEval_concat_selected.wav' --annotationFilepath='systemtest\finalSystemTest\timings_annotation_systemEval.csv'```
+```shell
+jn-seds-cli run --tfmodel=\!yamnet_extened production
+```
 
-Example for evaluating the given systemtest wave file without receiving it with a microphone. Instead the wave file data is used directly as model input. The evaluation wave file will be played just for the user.
+```shell
+jn-seds-cli run --tfmodel=\!yamnet_extened production --threshold=0.3 --channels=1
+```
 
-```python embedded-sed-system.py "./model/model_dev2_filewise_withoutSeperateConvNets_withoutSeperateFcNets_withoutLrSchedule_1e-05/" --mode='evaluation' --output=True --silent=True --wavFilepath='systemtest\finalSystemTest\systemEval_concat_selected.wav' --annotationFilepath='systemtest\finalSystemTest\timings_annotation_systemEval.csv'```
+Mode specific flag-usage examples:
+```shell
+jn-seds-cli run --tfmodel=\!crnn evaluation --save_log=True --wav_file="/path/to/wave.wav" --annotation_file="/path/to/annotations.csv" --silent=False
+```
 
-#### All Parameters
-The following paramters are defining the selected mode or are directly dependant of it.
-- `mode` - Their are two possible modes: `'production'` and `'evaluation'`. The evaluation mode offers a comparision of prepared wave files with corresponding ground truth annotations.
-- `silent` - Only relevant for the evaluation mode. An evaluation can be invoked by playing an example wave file through the sound output device `output=True` and receives it again if `silent=False`. This option has the advantage of evaluating the whole hardware system including the influence of the given microphone. With `silent=False`, no input device is needed. The evaluation is only determinded for the model.
-- `input` - True/False specifying the usage of an input sound device. Only *not necessary* for the `silent=True` `evaluation` mode.
-- `output` - True/False specifying the usage of an output sound device. *Necessary* just for the `silent=False` `evaluation` mode. Interesting for debugging purpose.
-- `bufferMaxSize` - Describes the maximum number of AudioReceiverElement objects in the buffer at the same time. The default value is -1 for keeping all received examples in the memory. For devices with low memory capacities, a high number should be selected instead.
-- `wavFilepath` - Only used for the evaluation mode. The filepath to the wave systemtest file.
-- `annotationFilepath` - Only used for the evaluation mode. The filepath to the annotations csv file for the selected corresponding wave systemtest file.
+```shell
+jn-seds-cli run --tfmodel=\!crnn production --save_log=True --use_output=True
+```
 
-The following paramters should be selected for the given devices. In general, a sample rate of 22050 should be enough.
-- `inputDevice_index` - Index number of a input sound device. Default is None, for using the selected default device.
-- `outputDevice_index` - Index number of a output sound device. Default is None, for using the selected default device.
-- `channels` - number channels of the sound input. Currently, only the first channel will be supported for the model prediction.
-- `gpu` - should be true, if an gpu is available in the given system.
-- `saveRecords` - For saving the recorded or received sound input. Default is true, if less storage is available false should be used.
-- `sample_rate` - number of samples per second
+## Advanced Usage
+Please note that in order to use the gpu, an appropriately compatible TensorFlow build must be 
+installed and used with `--gpu=True`. 
+In addition, the inference model type must be set to use 
+TensorFlow-TenorRT via `--infer_model=tftrt`, depending on the specific machine. 
+In some cases, also TFLite can be used with gpu support.
+Unfortunately, TF-TRT could not yet be tested thoroughly because compatible devices or 
+software dependencies were not available.
+For further information, read `run --help` under the related parameters.
 
-Because the following paramters are dependant from the architecture of the trained model, they should stay unmodified in most cases.
-- `frame_size` - seconds of one frame
-- `hop_size` - seconds of the skip size for the continous sliding window over the samples
-- `chunk_size` - number of frames in a chunk of samples
-- `n_mels` - number of mels
+New trained models can be used via `--tfmodel="/path/to/tf-savedmodel-dir savedmodel=crnn`. 
+The best way, is to modify the source code in the file `saved_models.py` and create a new child class of BaseSavedModel or Mono16kWaveInputSavedModel.
+Then create an entry for this class in selectors.py, thus custom preprocessing and postprocessing for the model can be defined.
+An easier way without modifying code is to use a saved model with the currently support interface of mono 16 kHz waveform input. 
+If so, it can easily be used via `--tfmodel="/path/to/tf-savedmodel-dir --saved_model=MONO_16K_IN`.
+Please note that this feature has not yet been thoroughly tested.
 
-Parameters for the logging configuration.
-- `loglevel` in most cases `"info"` or `"debug"`.
-- `logProb` Option to log the exact probability values of every prediction, instead of just output the hard thresholded label True/False.
+## Jetson Nano Setup
+The following explanation based on the latest stable version of the JetPack OS (4.6.1) for the 
+Jetson Nano at the time of writing. 
+The use of the future version JetPack 5.0 is expected to resolve the installation issues with 
+Tensorflow_io and thus possibly allow support of the GPU and Tensorflow-TRT on the Jetson Nano.
+However, without development intentions, the here documented version 4.6.1 of JetPack 
+should be used for now.
 
+Make sure that JetPack 4.6.1 has been installed!
+```shell
+apt-get update
+apt-get install portaudio19-dev
 
-## Architecture
-- `embedded-sed-system.py` - Script for the initialization of the predicter and receiver objects. Run this from command line with individual config for the defined parameters. 
-- `predicter.py` - Includes classes and implementations for the prediction process. The prediction function of a Predicter objects expects an AudioReceiverChunk object and returns an PredicterResult object.
-  - Predicter <- ProductionPredicter, EvaluatationPredicter
-  - PredicterResult <- ProductionPredicterResult, EvaluationPredicterResult
-- `receiver.py` - Includes classes and implementations for the receiving process of the audio samples. Their data will be later used for the prediction. The received buffer can be saved in storage for later reusablity.
-  - AudioReceiver(AudioReceiverBuffer)                                  <- ProductionAudioReceiver, EvaluationAudioReceiver
-  - AudioReceiverBuffer(AudioReceiverElement) --> AudioReceiverChunk    <- ProductionAudioReceiverBuffer, EvaluationAudioReceiverBuffer
-  - AudioReceiverChunk(AudioReceiverElement)                            <- ProductionAudioReceiverChunk, EvaluationAudioReceiverChunk
-  - AudioReceiverElement                                                <- ProductionAudioReceiverChunk, EvaluationAudioReceiverChunk
-- `utils.py` - Helper functions.
-- `export.py` - Extract the received audio samples from a backup of an previous AudioReceiverBuffer object to a wave file.
-- logs - Target directory of all logging outputs as file in parallel to the console prints.
-- model - Directory for the downloaded and trained tensorflow models. Contains the dynamically created tflite model compilation.
-- pyaudio - Contains some example scripts for an easy testing of sound devices and depended settings. From [https://people.csail.mit.edu/hubert/pyaudio/].
-- records - Target location for the automatically saved AudioReceiverBuffer objects.
-- systemtest - Contains system test wave files and annotation csv files for the EvaluationPredicter.
+sudo apt-get update
+sudo apt-get install libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev liblapack-dev libblas-dev gfortran
+sudo apt-get install python3-pip
 
+mkdir ./venv
+python3 -m venv ./venv
+source venv/bin/activate
 
+pip install -U pip testresources setuptools==49.6.0 
+pip install -U --no-deps numpy==1.19.4 future==0.18.2 mock==3.0.5 keras_preprocessing==1.1.2 keras_applications==1.0.8 gast==0.4.0 protobuf pybind11 cython pkgconfig
+env H5PY_SETUP_REQUIRES=0 pip install -U --no-build-isolation h5py==3.1.0
+pip install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v461 'tensorflow>=2'
+
+python -c "from tensorflow.python.client import device_lib; device_lib.list_local_devices()"
+PIP_EXTRA_INDEX_URL=https://snapshots.linaro.org/ldcg/python-cache pip install tensorflow_io
+python -c "from tensorflow.python.client import device_lib; device_lib.list_local_devices()"
+
+pip install bicycle-bell-seds-cli
+
+jn-seds-cli --help
+jn-seds-cli run --tfmodel=\!crnn production
+```
+Most of the installation steps for TensorFlow on the Jetson Nano are from 
+"Prerequisites and Dependencies" [in corresponding the Nvidia Docs](https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html).
+
+Using Docker can save some on setup steps, but can also add some others. 
+If Docker should be used on the Jetson Nano:
+```shell
+sudo docker run -it --rm --runtime nvidia --network host -v /home/jetson:/home/jetson --device /dev/snd nvcr.io/nvidia/l4t-tensorflow:r32.7.1-tf2.7-py3
+```
+
+## Development
+Feel free to report bugs as issues and also contribute to the project. 
+Please contact me for this. 
+Especially the integration of new models and the full and tested integration of TF-TRT are still 
+outstanding points of improvement. 
+In addition, the SEDS-CLI will be offered completely separate from the bicycle bell sound event 
+in a further step and repository.
+
+Use the following steps to install directly from the GitHub repository and 
+do not forget to call `git lfs pull` before running. 
+This will download the model data.
+```shell
+apt-get update
+apt-get install portaudio19-dev git git-lfs
+
+git clone https://github.com/ClemensKubach/bicycle-bell-sed-software.git
+cd bicycle-bell-sed-software
+git lfs pull
+pip install -e .
+```
+
+![system-overview](visualizations/overview.drawio.png "System Overview")
