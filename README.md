@@ -58,18 +58,20 @@ With this you can get help for each level, i.e.:
 `jn-seds-cli --help`, `jn-seds-cli run --help`, `jn-seds-cli run evaluation --help`.
 
 ## Usage Examples
+Show the location of the resources' folder:
 ```shell
 jn-seds-cli resources where
 ```
-
+Make a sound check of the audio devices:
 ```shell
 jn-seds-cli devices soundcheck
 ```
-
+Start a sound event detection with saving the logs to a file in the resources' folder and 
+record the first minute of the received audio input stream:
 ```shell
 jn-seds-cli run --tfmodel=\!crnn production --save_log=True --save_records=True --storage_length=60
 ```
-
+Convert the recorded file of the previous run into a wave file:
 ```shell
 jn-seds-cli conversion record_to_wav --path_storage_pickle="/abs/path/to/seds_cli/res/records/record-xx.pickle" --target_wav_path="./target_filepath/filename.wav"
 ```
@@ -85,16 +87,21 @@ Most parameters for the run command are available for both modes.
 Mode specific parameters can be found via `--help` for the selected mode. 
 The following flags are used for the production mode, but are available for the evaluation mode too.
 
+Select a predefined model via `--tfmodel=!model-name`, here CRNN via `!crnn`, and run the production 
+mode without displaying the probability value of the predictions. The logs will be saved to a file:
 ```shell
 jn-seds-cli run --tfmodel=\!crnn production --save_log=True --prob_logging=False
 ```
-
+Use the extended YAMNet model in a production run and define that the selected (default) 
+input device only has 1 input channel. Via specifying an integer for `input_device`, not `None`, 
+a specific (not default) sound device can be selected:
 ```shell
-jn-seds-cli run --tfmodel=\!yamnet_extened production
+jn-seds-cli run --tfmodel=\!yamnet_extened production --channels=1
 ```
-
+Use the base YAMNet model in a production run with a lower threshold as default and activate the
+logging of the probabilities to see that every prediction from a value of 0.3 will True:
 ```shell
-jn-seds-cli run --tfmodel=\!yamnet_extened production --threshold=0.3 --channels=1
+jn-seds-cli run --tfmodel=\!yamnet_base production --threshold=0.3 --prob_logging=True
 ```
 
 Mode specific flag-usage examples:
