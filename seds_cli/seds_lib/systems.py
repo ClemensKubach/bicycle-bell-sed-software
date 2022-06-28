@@ -73,4 +73,6 @@ class EvaluationSedSystem(ModeSedSystem):
 
     def init_predictor(self, config: PredictorConfig) -> None:
         """init evaluation predictor"""
+        self._logger.debug('Initializing Predictor...')
         self.predictor = EvaluationPredictor(config, self.receiver)
+        self._logger.debug('Initialized Predictor.')

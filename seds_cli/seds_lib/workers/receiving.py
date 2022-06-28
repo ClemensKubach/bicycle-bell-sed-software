@@ -137,6 +137,7 @@ class AudioReceiver(Thread, ABC):
                 end_time = time.perf_counter()
                 self._stream_callback_time = end_time - start_time
                 self._measure_time = False
+        self._logger.debug(f'Evaluation output_data size: {output_data.shape[0]}')
         return output_data, next_status
 
     @abstractmethod
@@ -273,6 +274,7 @@ class EvaluationAudioReceiver(AudioReceiver):
 
     def _create_audio_element(self, in_data: Any) -> Tuple[Optional[AudioElement], Any, int]:
         """de-serialize input data and create AudioElement."""
+        self._logger.debug(f'Received data string size {len(in_data)}')
         try:
             start_sample = self.current_start_sample
             end_sample = start_sample + self.config.audio_config.frame_size
@@ -282,8 +284,10 @@ class EvaluationAudioReceiver(AudioReceiver):
             else:
                 audio_as_np_float32 = np.fromstring(in_data, np.float32)[0::self.config.channels]
                 received_samples = audio_as_np_float32
+            self._logger.debug(f'Received number of samples: {received_samples.shape[0]}')
             labels = self.sample_timings[start_sample:end_sample]
             if end_sample >= self.wav.shape[0]:
+                self._logger.error('Evaluation callback index error!')
                 raise IndexError
             element = EvaluationAudioElement(
                 tf.constant(received_samples),
